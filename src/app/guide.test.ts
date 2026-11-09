@@ -93,6 +93,20 @@ describe('buildGuide', () => {
     expect(text).toContain('working down to 1-1/2" thick');
   });
 
+  it('explains tilted rips for a chevron', () => {
+    const state: DesignState = { ...defaultState, pattern: 'chevron', cellWidth: inch(1), stripThickness: inch(0.75) };
+    const strips = guideFor(state).find((stage) => stage.id === 'strips')!;
+    expect(strips.steps.join(' ')).toContain('Tilt the blade to 30 degrees');
+    expect(strips.steps.join(' ')).toContain('one square edge');
+  });
+
+  it('explains the several panels of a basket weave', () => {
+    const state: DesignState = { ...defaultState, pattern: 'basketweave', stripThickness: inch(1.5) };
+    const guide = guideFor(state);
+    expect(guide.find((stage) => stage.id === 'panel')!.steps[0]).toMatch(/^You are making \d+ identical panels/);
+    expect(guide.find((stage) => stage.id === 'arrange')!.steps.join(' ')).toContain('quarter turn');
+  });
+
   it('describes the trim for a brick board', () => {
     const text = guideFor({ ...defaultState, pattern: 'brick', cellWidth: inch(2.5) })
       .find((stage) => stage.id === 'flatten')!

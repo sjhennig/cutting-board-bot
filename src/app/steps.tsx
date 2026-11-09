@@ -4,7 +4,9 @@ import { WOOD_VAULT, WOOD_VAULT_LINES, woodVaultBoards } from '../data/woodVault
 import { formatLength, inch, type StockBoard } from '../engine';
 import type { Update } from './App';
 import {
+  CHEVRON_TILT,
   PATTERNS,
+  WEAVE_STRIPS,
   designSpecies,
   makeDesign,
   patternInfo,
@@ -333,13 +335,16 @@ export function PatternStep({ state, update }: StepProps) {
   return (
     <>
       <h2>Pick a pattern</h2>
-      <p className="lead">All four are good first boards. You can change your mind at any time.</p>
+      <p className="lead">
+        Beginner patterns need only square cuts. Intermediate ones ask for more care. You can change your mind at any
+        time.
+      </p>
       <div className="pattern-grid">
         {PATTERNS.map((pattern) => {
           const enough = available >= pattern.minSpecies;
           let thumbnail = null;
           try {
-            const sample = makeDesign({ ...state, pattern: pattern.id });
+            const sample = makeDesign({ ...state, ...pattern.defaults, pattern: pattern.id });
             thumbnail = <BoardPreview board={sample.board} label={`${pattern.name} pattern`} />;
           } catch {
             // Not buildable with the current woods; the card explains why.
@@ -356,10 +361,11 @@ export function PatternStep({ state, update }: StepProps) {
                 name="pattern"
                 checked={state.pattern === pattern.id}
                 disabled={!enough}
-                onChange={() => update({ pattern: pattern.id })}
+                onChange={() => update({ ...pattern.defaults, pattern: pattern.id })}
               />
               <span className="thumbnail">{thumbnail}</span>
               <span className="title">{pattern.name}</span>
+              <span className={`level ${pattern.level.toLowerCase()}`}>{pattern.level}</span>
               <span className="detail">
                 {enough ? pattern.blurb : `Needs ${pattern.minSpecies} woods. Go back and add another.`}
               </span>
@@ -424,27 +430,49 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
       <fieldset>
         <legend>Pieces</legend>
         <div className="row">
-          <LengthInput
-            label={info.cellLabel}
-            value={state.cellWidth}
-            unit={state.unit}
-            onChange={(cellWidth) => update({ cellWidth })}
-            hint={design ? `${design.columns} across the board.` : undefined}
-          />
+          {info.cellLabel !== null && (
+            <LengthInput
+              label={info.cellLabel}
+              value={state.cellWidth}
+              unit={state.unit}
+              onChange={(cellWidth) => update({ cellWidth })}
+              hint={
+                state.pattern === 'chevron'
+                  ? `Measured along the face of the board. ${design ? `${design.columns} strips.` : ''}`
+                  : design
+                    ? `${design.columns} across the board.`
+                    : undefined
+              }
+            />
+          )}
           <LengthInput
             label="Strip thickness"
             value={state.stripThickness}
             unit={state.unit}
             onChange={(stripThickness) => update({ stripThickness })}
             hint={
-              design
-                ? `The thickness of your boards. Each row is this deep: ${design.rows} rows.`
-                : 'The thickness of your boards.'
+              state.pattern === 'basketweave'
+                ? `The thickness of your boards. Tiles are square and this wide${design ? `: ${design.columns} by ${design.rows} tiles.` : '.'}`
+                : design
+                  ? `The thickness of your boards. Each row is this deep: ${design.rows} rows.`
+                  : 'The thickness of your boards.'
             }
           />
         </div>
 
-        {state.woodMode === 'buy' && (
+        {state.pattern === 'basketweave' && (
+          <p className="help">
+            Each tile is {WEAVE_STRIPS} strips, so every strip is {show(state.stripThickness / WEAVE_STRIPS)} wide. A
+            tile size of 1-1/2 in. works well: its strips can be cut from 1/2 in. boards stood on edge.
+          </p>
+        )}
+        {state.pattern === 'chevron' && (
+          <p className="help">
+            The strips are ripped with the blade tilted {CHEVRON_TILT} degrees, so they must come from boards wider than
+            the strip. Ready-made blanks cannot be used for this pattern.
+          </p>
+        )}
+        {state.woodMode === 'buy' && info.cellLabel !== null && state.pattern !== 'chevron' && (
           <div className="presets">
             <span>Ready-made blank widths, no ripping needed:</span>
             {BLANK_WIDTHS.map((width) => (

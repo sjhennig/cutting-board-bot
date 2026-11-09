@@ -838,3 +838,18 @@ svg.diagram text {
     word-break: break-all;
   }
 }
+
+.level {
+  justify-self: start;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.level.intermediate {
+  background: var(--caution-soft);
+  color: var(--caution);
+}

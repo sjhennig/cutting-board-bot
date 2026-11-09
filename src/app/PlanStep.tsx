@@ -62,7 +62,12 @@ export function PlanStep({
   const panel = recipe.panels[0]!;
   const info = patternInfo(state.pattern);
   const width = panelWidth(panel);
-  const slices = board.panels[0]!.slicesNeeded;
+  const slices = recipe.slices.length;
+  const panelCount = recipe.panels.length;
+  const slicesPerPanel = Math.max(...board.panels.map((report) => report.slicesAvailable));
+  const grid = (recipe.columns ?? 1) > 1;
+  const tilt = panel.bevel;
+  const turnedOver = recipe.slices.some((slice) => slice.over);
   const flipped = recipe.slices.flatMap((slice, index) => (slice.flip ? [index + 1] : []));
   const trimmed = width - board.length > 0.01;
   const blocked = design.notices.some((notice) => notice.level === 'problem');
@@ -196,6 +201,14 @@ export function PlanStep({
             ? 'Cut each board to that length first, then rip it into strips.'
             : 'Cut each board to that length.'}
         </p>
+        {tilt !== undefined && (
+          <p>
+            Rip with the blade tilted <strong>{tilt} degrees</strong>, so every strip has slanted sides. The widths
+            below are measured along the face of the board. The first strip off each board keeps one square edge: set
+            two of these aside for the outside of the panel, and trim the square edge off the rest with one more tilted
+            cut.
+          </p>
+        )}
         {oneLengthEach && (
           <p className="help">
             That length gives exactly the slices you need. If you would like a spare slice or two, leave the boards
@@ -248,10 +261,12 @@ export function PlanStep({
 
         {anyRipping && (
           <table className="fence">
-            <caption>Fence settings for ripping</caption>
+            <caption>
+              {tilt !== undefined ? `Rips, with the blade tilted ${tilt} degrees` : 'Fence settings for ripping'}
+            </caption>
             <thead>
               <tr>
-                <th scope="col">Set fence to</th>
+                <th scope="col">{tilt !== undefined ? 'Strip width' : 'Set fence to'}</th>
                 <th scope="col">Wood</th>
                 <th scope="col">Strips</th>
               </tr>
@@ -274,9 +289,13 @@ export function PlanStep({
     panel: (
       <>
         <p>
-          Lay out {plural(panel.strips.length, 'strip')} side by side in this order and glue them edge to edge. The
-          panel will be <strong>{show(width)}</strong> wide, {show(panel.thickness)} thick and {show(panel.length)}{' '}
-          long.
+          {panelCount > 1 && `Make ${panelCount} identical panels. For each one, lay `}
+          {panelCount === 1 && 'Lay '}
+          out {plural(panel.strips.length, 'strip')} side by side in this order and glue them edge to edge.
+          {tilt !== undefined &&
+            ' All the slants must lean the same way, with the two square edges on the outside.'}{' '}
+          {panelCount > 1 ? 'Each panel' : 'The panel'} will be <strong>{show(width)}</strong> wide,{' '}
+          {show(panel.thickness)} thick and {show(panel.length)} long.
         </p>
         <ol className="strip-order">
           {order.map((label, index) => (
@@ -290,9 +309,12 @@ export function PlanStep({
     slice: (
       <>
         <p>
-          Square one end of the panel, then crosscut it into <strong>{plural(slices, 'slice')}</strong>, each{' '}
-          <strong>{show(recipe.cut.sliceThickness)}</strong> thick. Use a crosscut sled with a stop block so every slice
-          is identical. Number the slices in order as they come off the saw.
+          {panelCount > 1
+            ? `Square one end of each panel, then crosscut each into ${plural(slicesPerPanel, 'slice')}. You need `
+            : 'Square one end of the panel, then crosscut it into '}
+          <strong>{plural(slices, 'slice')}</strong>
+          {panelCount > 1 && ' in all'}, each <strong>{show(recipe.cut.sliceThickness)}</strong> thick. Use a crosscut
+          sled with a stop block so every slice is identical. Number the slices in order as they come off the saw.
         </p>
         <p className="help">
           The slices are cut {show(recipe.flattenPerFace * 2)} thicker than the finished board to leave room for
@@ -303,10 +325,17 @@ export function PlanStep({
     arrange: (
       <>
         <p>
-          Roll each slice a quarter turn so the end grain faces up. {info.arrange}
+          {grid
+            ? 'Stand each tile so the end grain faces up.'
+            : 'Roll each slice a quarter turn so the end grain faces up.'}{' '}
+          {info.arrange}
           {flipped.length > 0 && state.pattern === 'chaotic' && ` Slices to turn: ${flipped.join(', ')}.`}
         </p>
-        <p>Check the pattern against the picture, then glue the slices together.</p>
+        <p>
+          {grid
+            ? 'Check the pattern against the picture. Glue the tiles of each row together first, then glue the rows to each other.'
+            : 'Check the pattern against the picture, then glue the slices together.'}
+        </p>
       </>
     ),
     flatten: (
@@ -363,8 +392,11 @@ export function PlanStep({
         <ArrangeDiagram recipe={recipe} label={`The ${slices} slices in order, end grain up. ${info.arrange}`} />
       ),
       caption:
-        'The slices in order, end grain up, before they are pushed together.' +
+        (grid
+          ? 'The tiles in position, end grain up, before they are pushed together.'
+          : 'The slices in order, end grain up, before they are pushed together.') +
         (flipped.length > 0 ? ' ⇄ marks a slice turned end for end.' : '') +
+        (turnedOver ? ' ⇅ marks a slice turned upside down.' : '') +
         (trimmed ? ' Dashed lines show where the ends are trimmed.' : ''),
     },
     flatten: {

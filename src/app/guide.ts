@@ -34,7 +34,10 @@ export function buildGuide(state: DesignState, design: Design): GuideStage[] {
   const info = patternInfo(state.pattern);
   const ripping = needsRipping(design);
   const narrow = hasNarrowPieces(design);
-  const slices = board.panels[0]!.slicesNeeded;
+  const slices = recipe.slices.length;
+  const panelCount = recipe.panels.length;
+  const tilt = panel.bevel;
+  const grid = (recipe.columns ?? 1) > 1;
   const trimmed = panelWidth(panel) - board.length > 0.01;
   const planing = design.rips.some((line) => line.planeTo !== undefined);
 
@@ -57,11 +60,17 @@ export function buildGuide(state: DesignState, design: Design): GuideStage[] {
       steps: [
         ...(planing ? ['Plane the thicker boards down first, so that all your boards are the same thickness.'] : []),
         `Crosscut each board to ${show(panel.length)}, as shown in the table.`,
-        ...(ripping
+        ...(tilt !== undefined
           ? [
-              'Set the rip fence to the first width in the fence table and rip every strip of that width before moving the fence. This keeps strips of the same width identical.',
+              `Tilt the blade to ${tilt} degrees. Rip a short offcut first and check the slant with a protractor or bevel gauge.`,
+              'Rip the strips, keeping the same face of the board up for every cut so that all the slants match.',
+              'Keep two strips that still have one square edge for the outside of the panel. Trim the square edge off the others with a tilted cut.',
             ]
-          : []),
+          : ripping
+            ? [
+                'Set the rip fence to the first width in the fence table and rip every strip of that width before moving the fence. This keeps strips of the same width identical.',
+              ]
+            : []),
         'Stack the strips by wood so they are easy to lay out.',
       ],
     },
@@ -69,7 +78,13 @@ export function buildGuide(state: DesignState, design: Design): GuideStage[] {
       id: 'panel',
       title: 'Glue the strips into a panel',
       steps: [
+        ...(panelCount > 1 ? [`You are making ${panelCount} identical panels. Repeat these steps for each.`] : []),
         'Lay the strips out dry, in the order shown, on a flat surface. Check the order against the picture.',
+        ...(tilt !== undefined
+          ? [
+              'Check that every slant leans the same way. Slanted faces slide under clamp pressure, so tighten gently and watch that the ends stay lined up.',
+            ]
+          : []),
         'Spread glue evenly over one of each pair of faces that meet, then press the strips together.',
         'Clamp across the panel until a thin line of glue squeezes out along every joint. Keep the ends lined up and the faces flush.',
         'Scrape off the squeezed-out glue once it has turned rubbery. Leave the panel clamped for 24 hours.',
@@ -82,18 +97,27 @@ export function buildGuide(state: DesignState, design: Design): GuideStage[] {
       steps: [
         'Trim one end of the panel square on a crosscut sled.',
         `Clamp a stop block to the sled ${show(recipe.cut.sliceThickness)} from the blade.`,
-        `Push the squared end against the stop and cut. Repeat until you have ${slices} slices.`,
-        'Number each slice in pencil as it comes off the saw, so you can keep them in order.',
+        `Push the squared end against the stop and cut. Repeat until you have ${slices} slices${panelCount > 1 ? ' from all the panels together' : ''}.`,
+        grid
+          ? 'Stack the tiles as they come off the saw. They are all alike, so their order does not matter.'
+          : 'Number each slice in pencil as it comes off the saw, so you can keep them in order.',
       ],
     },
     {
       id: 'arrange',
       title: 'Arrange and glue the slices',
       steps: [
-        'Roll each slice a quarter turn so the end grain faces up, keeping them in numbered order.',
+        grid
+          ? 'Stand each tile so the end grain faces up.'
+          : 'Roll each slice a quarter turn so the end grain faces up, keeping them in numbered order.',
         info.arrange,
         'Check the dry layout against the picture before you open the glue.',
-        'Spread glue on the faces that meet, press the slices together, and clamp across them.',
+        ...(grid
+          ? [
+              'Glue one row of tiles at a time: spread glue on the faces that meet, press the tiles together and clamp along the row. Keep each row straight against a flat edge.',
+              'When the rows are dry, glue them to each other, lining up the joints between tiles.',
+            ]
+          : ['Spread glue on the faces that meet, press the slices together, and clamp across them.']),
         'Leave the board clamped for 24 hours.',
       ],
     },

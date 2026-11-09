@@ -1,4 +1,4 @@
-import { panelWidth, type PlannedBoard, type Recipe } from '../engine';
+import { layoutPieces, type PlannedBoard, type Recipe } from '../engine';
 import { speciesColor } from './parts';
 
 const OUTLINE = { stroke: 'rgba(0,0,0,0.25)', strokeWidth: 0.5 };
@@ -63,61 +63,70 @@ export function StockCutDiagram(props: {
 
 /** The slices laid out end grain up, in glue-up order, before they are pushed together. */
 export function ArrangeDiagram({ recipe, label }: { recipe: Recipe; label: string }) {
-  const panels = new Map(recipe.panels.map((panel) => [panel.id, panel]));
-  const heights = recipe.slices.map((slice) => slice.ripTo ?? panels.get(slice.panel)!.thickness);
-  const average = heights.reduce((sum, height) => sum + height, 0) / heights.length;
-  const gap = average * 0.35;
+  const pieces = layoutPieces(recipe);
+  const grid = (recipe.columns ?? 1) > 1;
+  const average = pieces.reduce((sum, piece) => sum + piece.height, 0) / pieces.length;
+  const gap = average * (grid ? 0.18 : 0.35);
   const text = Math.max(average * 0.55, 6);
-  const margin = text * 2.2;
+  const margin = grid ? 0 : text * 2.2;
+  const marked = pieces.some((piece) => piece.flipped || piece.over);
 
-  const shifts = recipe.slices.map((slice) => slice.shift ?? 0);
-  const widths = recipe.slices.map((slice) => panelWidth(panels.get(slice.panel)!));
-  const extent = Math.max(...shifts.map((shift, index) => shift + (widths[index] ?? 0)));
+  const minX = Math.min(...pieces.map((piece) => piece.x));
+  const maxX = Math.max(...pieces.map((piece) => piece.x + piece.width + (grid ? piece.column * gap : 0)));
+  const bottom = Math.max(...pieces.map((piece) => piece.y + piece.height + piece.row * gap));
+
+  // Where the glued board is trimmed square, when shifted slices leave ragged ends.
   const trim = recipe.trimEnds ?? 0;
-  const left = Math.max(...shifts) + trim;
-  const right = Math.min(...shifts.map((shift, index) => shift + (widths[index] ?? 0))) - trim;
-  const trimmed = left > 0.01 || extent - right > 0.01;
-  const anyFlip = recipe.slices.some((slice) => slice.flip);
-  const totalHeight = heights.reduce((sum, height) => sum + height + gap, 0) - gap;
+  const left = Math.max(...pieces.filter((piece) => piece.column === 0).map((piece) => piece.x)) + trim;
+  const right = Math.min(...pieces.map((piece) => piece.x + piece.width)) - trim;
+  const trimmed = !grid && (left - minX > 0.01 || maxX - right > 0.01);
 
-  let y = 0;
   return (
     <svg
       className="diagram arrange"
-      viewBox={`${-margin} ${-gap} ${extent + margin * (anyFlip ? 2 : 1.1)} ${totalHeight + gap * 2}`}
+      viewBox={`${minX - margin} ${-gap} ${maxX - minX + margin * (marked ? 2 : 1.1)} ${bottom + gap * 2}`}
       role="img"
       aria-label={label}
     >
-      {recipe.slices.map((slice, index) => {
-        const panel = panels.get(slice.panel)!;
-        const height = heights[index] ?? 0;
-        const top = y;
-        y += height + gap;
-        const strips = slice.flip ? [...panel.strips].reverse() : panel.strips;
-        let x = slice.shift ?? 0;
+      {pieces.map((piece) => {
+        const dx = grid ? piece.column * gap : 0;
+        const dy = piece.row * gap;
         return (
-          <g key={index}>
-            <text x={-margin * 0.3} y={top + height / 2} fontSize={text} textAnchor="end" dominantBaseline="central">
-              {index + 1}
-            </text>
-            {strips.map((strip, stripIndex) => {
-              const start = x;
-              x += strip.width;
-              return (
-                <rect
-                  key={stripIndex}
-                  x={start}
-                  y={top}
-                  width={strip.width}
-                  height={height}
-                  fill={speciesColor(strip.species)}
+          <g key={piece.slice} transform={`translate(${dx} ${dy})`}>
+            {!grid && (
+              <text
+                x={minX - margin * 0.3}
+                y={piece.y + piece.height / 2}
+                fontSize={text}
+                textAnchor="end"
+                dominantBaseline="central"
+              >
+                {piece.slice + 1}
+              </text>
+            )}
+            {piece.cells.map((cell, index) =>
+              cell.points ? (
+                <polygon
+                  key={index}
+                  points={cell.points.map(([x, y]) => `${x},${y}`).join(' ')}
+                  fill={speciesColor(cell.species)}
                   {...OUTLINE}
                 />
-              );
-            })}
-            {slice.flip && (
-              <text x={extent + margin * 0.25} y={top + height / 2} fontSize={text} dominantBaseline="central">
-                ⇄
+              ) : (
+                <rect
+                  key={index}
+                  x={cell.x}
+                  y={cell.y}
+                  width={cell.width}
+                  height={cell.height}
+                  fill={speciesColor(cell.species)}
+                  {...OUTLINE}
+                />
+              ),
+            )}
+            {(piece.flipped || piece.over) && (
+              <text x={maxX + margin * 0.25} y={piece.y + piece.height / 2} fontSize={text} dominantBaseline="central">
+                {piece.over ? '⇅' : '⇄'}
               </text>
             )}
           </g>
@@ -125,8 +134,8 @@ export function ArrangeDiagram({ recipe, label }: { recipe: Recipe; label: strin
       })}
       {trimmed && (
         <>
-          <line className="cut-line" x1={left} x2={left} y1={-gap} y2={totalHeight + gap} />
-          <line className="cut-line" x1={right} x2={right} y1={-gap} y2={totalHeight + gap} />
+          <line className="cut-line" x1={left} x2={left} y1={-gap} y2={bottom + gap} />
+          <line className="cut-line" x1={right} x2={right} y1={-gap} y2={bottom + gap} />
         </>
       )}
     </svg>

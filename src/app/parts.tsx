@@ -1,6 +1,15 @@
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { speciesById } from '../data/species';
-import { formatLength, parseLength, type BoardResult, type Recipe, type Unit } from '../engine';
+import {
+  bevelOffset,
+  formatLength,
+  panelWidth,
+  parseLength,
+  slicesNeededFrom,
+  type BoardResult,
+  type Recipe,
+  type Unit,
+} from '../engine';
 import type { Notice } from './design';
 
 export const speciesName = (id: string): string => speciesById(id)?.name ?? id;
@@ -88,18 +97,28 @@ export function BoardPreview({ board, label }: { board: BoardResult; label: stri
       aria-label={label}
       preserveAspectRatio="xMidYMid meet"
     >
-      {board.cells.map((cell, index) => (
-        <rect
-          key={index}
-          x={cell.x}
-          y={cell.y}
-          width={cell.width}
-          height={cell.height}
-          fill={speciesColor(cell.species)}
-          stroke="rgba(0,0,0,0.18)"
-          strokeWidth={0.4}
-        />
-      ))}
+      {board.cells.map((cell, index) =>
+        cell.points ? (
+          <polygon
+            key={index}
+            points={cell.points.map(([x, y]) => `${x},${y}`).join(' ')}
+            fill={speciesColor(cell.species)}
+            stroke="rgba(0,0,0,0.18)"
+            strokeWidth={0.4}
+          />
+        ) : (
+          <rect
+            key={index}
+            x={cell.x}
+            y={cell.y}
+            width={cell.width}
+            height={cell.height}
+            fill={speciesColor(cell.species)}
+            stroke="rgba(0,0,0,0.18)"
+            strokeWidth={0.4}
+          />
+        ),
+      )}
     </svg>
   );
 }
@@ -116,9 +135,10 @@ export function PanelPreview({
 }) {
   const panel = recipe.panels[panelIndex];
   if (!panel) return null;
-  const width = panel.strips.reduce((sum, strip) => sum + strip.width, 0);
+  const width = panelWidth(panel);
+  const lean = bevelOffset(panel);
   const { sliceThickness, kerf, endTrim } = recipe.cut;
-  const needed = recipe.slices.filter((slice) => slice.panel === panel.id).length;
+  const needed = slicesNeededFrom(panel, recipe);
   const cuts = Array.from({ length: needed + 1 }, (_, index) => endTrim + index * (sliceThickness + kerf));
 
   let y = 0;
@@ -134,15 +154,17 @@ export function PanelPreview({
       preserveAspectRatio="xMidYMid meet"
     >
       {panel.strips.map((strip, index) => {
-        const top = y;
+        // On a bevelled panel the top face of each strip is shifted over by the lean.
+        const top = Math.max(0, y - lean);
         y += strip.width;
+        const bottom = Math.min(width, y - lean);
         return (
           <rect
             key={index}
             x={0}
             y={top}
             width={panel.length}
-            height={strip.width}
+            height={bottom - top}
             fill={speciesColor(strip.species)}
             stroke="rgba(0,0,0,0.18)"
             strokeWidth={0.4}

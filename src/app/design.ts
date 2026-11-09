@@ -1,11 +1,13 @@
 import { speciesById, speciesWarnings } from '../data/species';
 import { woodVaultBoards } from '../data/woodVault';
 import {
+  basketWeave,
   brick,
   buildBoard,
   chaotic,
   checkDesign,
   checkerboard,
+  chevron,
   inch,
   planCuts,
   ripList,
@@ -22,15 +24,18 @@ import {
   type Unit,
 } from '../engine';
 
-export type PatternId = 'checkerboard' | 'brick' | 'stripes' | 'chaotic';
+export type PatternId = 'checkerboard' | 'brick' | 'stripes' | 'chaotic' | 'basketweave' | 'chevron';
 
 export interface PatternInfo {
   id: PatternId;
   name: string;
   blurb: string;
+  level: 'Beginner' | 'Intermediate';
   minSpecies: number;
-  /** What the "cell width" setting is called for this pattern. */
-  cellLabel: string;
+  /** What the "cell width" setting is called for this pattern, or null if the pattern does not use it. */
+  cellLabel: string | null;
+  /** Settings that suit this pattern, applied when it is chosen. */
+  defaults?: Partial<DesignState>;
   /** What to do with the slices before the second glue-up. */
   arrange: string;
 }
@@ -40,6 +45,7 @@ export const PATTERNS: PatternInfo[] = [
     id: 'checkerboard',
     name: 'Checkerboard',
     blurb: 'The classic. Two woods in alternating squares.',
+    level: 'Beginner',
     minSpecies: 2,
     cellLabel: 'Square width',
     arrange: 'Turn every second slice end for end, so each square sits next to the other wood.',
@@ -48,6 +54,7 @@ export const PATTERNS: PatternInfo[] = [
     id: 'brick',
     name: 'Brick',
     blurb: 'Rows offset by half a brick, like a wall. Works with one wood or several.',
+    level: 'Beginner',
     minSpecies: 1,
     cellLabel: 'Brick length',
     arrange: 'Slide every second slice sideways by half a brick. The ends are trimmed square after glue-up.',
@@ -56,6 +63,7 @@ export const PATTERNS: PatternInfo[] = [
     id: 'stripes',
     name: 'Stripes',
     blurb: 'The simplest board: bands of wood running end to end.',
+    level: 'Beginner',
     minSpecies: 1,
     cellLabel: 'Stripe width',
     arrange: 'Keep every slice the same way round so the stripes line up.',
@@ -64,11 +72,40 @@ export const PATTERNS: PatternInfo[] = [
     id: 'chaotic',
     name: 'Chaotic',
     blurb: 'Random widths and flipped rows. Forgiving, and great for mixed offcuts.',
+    level: 'Beginner',
     minSpecies: 2,
     cellLabel: 'Widest strip',
     arrange: 'Turn the marked slices end for end. Small misalignments will not show in this pattern.',
   },
+  {
+    id: 'basketweave',
+    name: 'Basket weave',
+    blurb: 'Square tiles of three strips, every other one turned, so the strips seem to weave.',
+    level: 'Intermediate',
+    minSpecies: 2,
+    cellLabel: null,
+    // 1-1/2 in. tiles are three 1/2 in. strips, which 1/2 in. boards supply with no planing.
+    defaults: { stripThickness: inch(1.5) },
+    arrange:
+      'Lay the tiles out in a grid. Turn every second tile a quarter turn, like the squares of a checkerboard, so its strips run across its neighbours.',
+  },
+  {
+    id: 'chevron',
+    name: 'Chevron',
+    blurb: 'Zigzag bands. The strips are ripped with the blade tilted, so each one slants.',
+    level: 'Intermediate',
+    minSpecies: 2,
+    cellLabel: 'Strip width',
+    // 3/4 in. boards come in every wood at the same thickness, so nothing needs planing.
+    defaults: { cellWidth: inch(1), stripThickness: inch(0.75) },
+    arrange: 'Turn every second slice upside down. This mirrors its slant, so the bands zigzag and meet at each joint.',
+  },
 ];
+
+/** Blade tilt for chevron strips, in degrees from vertical. */
+export const CHEVRON_TILT = 30;
+/** Strips in each basket weave tile. */
+export const WEAVE_STRIPS = 3;
 
 export const patternInfo = (id: PatternId): PatternInfo => PATTERNS.find((pattern) => pattern.id === id) as PatternInfo;
 
@@ -189,6 +226,39 @@ export function makeRecipe(state: DesignState): { recipe: Recipe; columns: numbe
       }));
       return { recipe: stripes({ strips, rows, shop }), columns, rows };
     }
+    case 'basketweave': {
+      // Tiles are square, as wide as the stock is thick.
+      const tile = state.stripThickness;
+      const columns = count(state.boardLength, tile);
+      const longest =
+        state.woodMode === 'buy'
+          ? Math.max(...woodVaultBoards().map((board) => board.length))
+          : Math.min(
+              ...species
+                .slice(0, 2)
+                .map((id) =>
+                  Math.max(0, ...state.stock.filter((board) => board.species === id).map((board) => board.length)),
+                ),
+            );
+      const recipe = basketWeave({
+        species,
+        columns,
+        rows,
+        stripsPerTile: WEAVE_STRIPS,
+        maxLogLength: longest,
+        shop,
+      });
+      return { recipe, columns, rows };
+    }
+    case 'chevron': {
+      const lean = state.stripThickness * Math.tan((CHEVRON_TILT * Math.PI) / 180);
+      const columns = count(state.boardLength + lean, cell);
+      return {
+        recipe: chevron({ species, columns, rows, stripWidth: cell, bevel: CHEVRON_TILT, shop }),
+        columns,
+        rows,
+      };
+    }
     case 'chaotic': {
       const recipe = chaotic({
         species,
@@ -252,6 +322,23 @@ export function makeDesign(state: DesignState): Design {
   }
 
   for (const warning of checkDesign(recipe, board)) notices.push(warning);
+
+  if (state.pattern === 'chevron') {
+    notices.push({
+      level: 'caution',
+      message:
+        'The steps for this pattern are worked out from its geometry, not taken from a published build guide. ' +
+        'Rip a short test piece first to check your blade tilt and fence setting.',
+    });
+  }
+  if (state.pattern === 'basketweave') {
+    notices.push({
+      level: 'caution',
+      message:
+        `Each tile must be exactly square: its ${WEAVE_STRIPS} strips together must measure the same as the ` +
+        'thickness of your boards. Measure a glued panel before slicing it, and trim it square if needed.',
+    });
+  }
 
   for (const planned of plan.boards) {
     const used = planned.segments.reduce((sum, segment) => sum + segment.length, 0);

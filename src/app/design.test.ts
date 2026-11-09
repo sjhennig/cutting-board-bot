@@ -23,10 +23,35 @@ describe('makeDesign', () => {
     expect(design.plan.boards.every((board) => board.segments[0]!.leftoverWidth === 0)).toBe(true);
   });
 
-  it.each(PATTERNS.map((pattern) => pattern.id))('builds a %s board from the default woods', (pattern) => {
-    const design = makeDesign({ ...defaultState, pattern });
+  it.each(PATTERNS)('builds a $name board from the default woods, with nothing to fix', (pattern) => {
+    // Choosing a pattern in the app applies its defaults.
+    const design = makeDesign({ ...defaultState, ...pattern.defaults, pattern: pattern.id });
     expect(design.plan.shortfalls).toEqual([]);
+    expect(design.notices.filter((notice) => notice.level === 'problem')).toEqual([]);
     expect(design.board.cells.length).toBeGreaterThan(0);
+  });
+
+  it('builds a basket weave from 1/2 in. boards stood on edge, in several logs', () => {
+    const pattern = PATTERNS.find((entry) => entry.id === 'basketweave')!;
+    const design = makeDesign({ ...defaultState, ...pattern.defaults, pattern: 'basketweave' });
+    // 15 by 13 in. in 1-1/2 in. tiles: 10 by 9.
+    expect([design.columns, design.rows]).toEqual([10, 9]);
+    expect(design.board.length).toBeCloseTo(inch(15), 6);
+    expect(design.recipe.panels.length).toBeGreaterThan(1);
+    expect(design.rips.every((line) => line.orientation === 'onEdge' && line.planeTo === undefined)).toBe(true);
+    expect(design.purchase.every((line) => Math.abs(line.board.thickness - inch(0.5)) < 0.01)).toBe(true);
+  });
+
+  it('builds a chevron from 3/4 in. boards with tilted rips', () => {
+    const pattern = PATTERNS.find((entry) => entry.id === 'chevron')!;
+    const design = makeDesign({ ...defaultState, ...pattern.defaults, pattern: 'chevron' });
+    expect(design.rips.every((line) => line.bevel === 30)).toBe(true);
+    expect(design.purchase.every((line) => Math.abs(line.board.thickness - inch(0.75)) < 0.01)).toBe(true);
+    // 15 strips of 1 in., less one lean of 3/4 x tan 30.
+    expect(design.board.length).toBeCloseTo(inch(15) - inch(0.75) * Math.tan(Math.PI / 6), 6);
+    expect(design.notices.some((notice) => notice.message.includes('not taken from a published build guide'))).toBe(
+      true,
+    );
   });
 
   it('rounds the requested size to whole pieces', () => {
