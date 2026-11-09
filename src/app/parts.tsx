@@ -105,7 +105,15 @@ export function BoardPreview({ board, label }: { board: BoardResult; label: stri
 }
 
 /** The first glue-up, seen from above, with the crosscut lines marked. */
-export function PanelPreview({ recipe, panelIndex = 0 }: { recipe: Recipe; panelIndex?: number }) {
+export function PanelPreview({
+  recipe,
+  panelIndex = 0,
+  cuts: showCuts = true,
+}: {
+  recipe: Recipe;
+  panelIndex?: number;
+  cuts?: boolean;
+}) {
   const panel = recipe.panels[panelIndex];
   if (!panel) return null;
   const width = panel.strips.reduce((sum, strip) => sum + strip.width, 0);
@@ -119,7 +127,10 @@ export function PanelPreview({ recipe, panelIndex = 0 }: { recipe: Recipe; panel
       className="panel"
       viewBox={`0 0 ${panel.length} ${width}`}
       role="img"
-      aria-label={`The glued panel: ${panel.strips.length} strips side by side, with ${needed} slices marked across it`}
+      aria-label={
+        `The glued panel: ${panel.strips.length} strips side by side` +
+        (showCuts ? `, with ${needed} slices marked across it` : '')
+      }
       preserveAspectRatio="xMidYMid meet"
     >
       {panel.strips.map((strip, index) => {
@@ -138,7 +149,7 @@ export function PanelPreview({ recipe, panelIndex = 0 }: { recipe: Recipe; panel
           />
         );
       })}
-      {cuts
+      {(showCuts ? cuts : [])
         .filter((x) => x <= panel.length + 0.01)
         .map((x, index) => (
           <line key={index} x1={x} x2={x} y1={0} y2={width} className="cut-line" />

@@ -1,17 +1,50 @@
+import type { ReactNode } from 'react';
+import { SOURCES_CHECKED, type StageId, type Tip } from '../data/tips';
 import { WOOD_VAULT } from '../data/woodVault';
 import type { CatalogBoard } from '../data/woodVault';
 import { formatLength, panelWidth, type PlannedBoard } from '../engine';
+import type { Update } from './App';
 import { designSpecies, patternInfo, type Design, type DesignState } from './design';
+import { ArrangeDiagram, FlattenDiagram, StockCutDiagram } from './diagrams';
+import { buildGuide } from './guide';
 import { BoardPreview, Notices, PanelPreview, Swatch, speciesName } from './parts';
+
+/** The stages that make up the cut list. The rest appear only with full instructions. */
+const CUT_LIST_STAGES: StageId[] = ['wood', 'strips', 'panel', 'slice', 'arrange', 'flatten'];
+
+function TipCard({ tip }: { tip: Tip }) {
+  const links = (sources: Tip['sources']): ReactNode =>
+    sources.map((source, index) => (
+      <span key={source.url}>
+        {index > 0 && '; '}
+        <a href={source.url}>{source.name}</a>
+      </span>
+    ));
+  return (
+    <li className="tip">
+      <strong>{tip.title}</strong>
+      <p>{tip.text}</p>
+      <p className="source">Source: {links(tip.sources)}</p>
+      {tip.otherView && (
+        <p className="other-view">
+          <strong>Another view.</strong> {tip.otherView.text}{' '}
+          <span className="source">Source: {links(tip.otherView.sources)}</span>
+        </p>
+      )}
+    </li>
+  );
+}
 
 const plural = (count: number, word: string): string => `${count} ${word}${count === 1 ? '' : 's'}`;
 
 export function PlanStep({
   state,
+  update,
   design,
   error,
 }: {
   state: DesignState;
+  update: Update;
   design: Design | null;
   error: string | null;
 }) {
@@ -46,6 +79,7 @@ export function PlanStep({
     first: number;
     last: number;
     name: string;
+    planned: PlannedBoard;
     lengths: string;
     rip: string;
     offcuts: string;
@@ -90,46 +124,24 @@ export function PlanStep({
         first: planned.copy,
         last: planned.copy,
         name: boardName(planned),
+        planned,
       });
     }
   }
   const oneLengthEach = plan.boards.every((planned) => planned.segments.length === 1);
 
-  // Describe the glue-up order as runs: "Hard maple, Black walnut" repeated.
   const order = panel.strips.map((strip) => `${speciesName(strip.species)} ${show(strip.width)}`);
 
-  return (
-    <div className="plan">
-      <h2>Your cut list</h2>
-      <p className="lead">
-        A {info.name.toLowerCase()} board in {designSpecies(state).map(speciesName).join(' and ')}, finishing at{' '}
-        <strong>
-          {show(board.length)} × {show(board.width)} × {show(board.thickness)} thick
-        </strong>
-        .
-      </p>
+  const guide = state.showGuide;
+  const stages = buildGuide(state, design).filter((stage) => guide || CUT_LIST_STAGES.includes(stage.id));
+  const sizeOf = (stockId: string): { width: number; length: number } | undefined =>
+    state.woodMode === 'buy'
+      ? purchase.find((line) => line.board.id === stockId)?.board
+      : state.stock.find((item) => item.id === stockId);
 
-      <Notices notices={design.notices} />
-      {blocked && (
-        <p className="empty">The steps below assume the problems above are fixed. Go back to change the design.</p>
-      )}
-
-      <div className="plan-previews">
-        <figure>
-          <PanelPreview recipe={recipe} />
-          <figcaption>First glue-up, with the slices marked</figcaption>
-        </figure>
-        <figure>
-          <BoardPreview board={board} label="The finished board" />
-          <figcaption>Finished board</figcaption>
-        </figure>
-      </div>
-
-      <section>
-        <h3>
-          <span className="number">1</span>
-          {state.woodMode === 'buy' ? 'Buy your wood' : 'Gather your boards'}
-        </h3>
+  const content: Partial<Record<StageId, ReactNode>> = {
+    wood: (
+      <>
         <p className="headline">{plural(totalBoards, 'board')} in total.</p>
         {state.woodMode === 'buy' ? (
           <>
@@ -172,14 +184,12 @@ export function PlanStep({
             </p>
           </>
         ) : (
-          <p className="help">The table in step 2 shows which of your boards are used.</p>
+          <p className="help">The table in the next step shows which of your boards are used.</p>
         )}
-      </section>
-
-      <section>
-        <h3>
-          <span className="number">2</span>Cut the strips
-        </h3>
+      </>
+    ),
+    strips: (
+      <>
         <p>
           Every strip is <strong>{show(panel.length)}</strong> long.{' '}
           {anyRipping
@@ -259,12 +269,10 @@ export function PlanStep({
             </tbody>
           </table>
         )}
-      </section>
-
-      <section>
-        <h3>
-          <span className="number">3</span>Glue the strips into a panel
-        </h3>
+      </>
+    ),
+    panel: (
+      <>
         <p>
           Lay out {plural(panel.strips.length, 'strip')} side by side in this order and glue them edge to edge. The
           panel will be <strong>{show(width)}</strong> wide, {show(panel.thickness)} thick and {show(panel.length)}{' '}
@@ -277,12 +285,10 @@ export function PlanStep({
             </li>
           ))}
         </ol>
-      </section>
-
-      <section>
-        <h3>
-          <span className="number">4</span>Slice the panel
-        </h3>
+      </>
+    ),
+    slice: (
+      <>
         <p>
           Square one end of the panel, then crosscut it into <strong>{plural(slices, 'slice')}</strong>, each{' '}
           <strong>{show(recipe.cut.sliceThickness)}</strong> thick. Use a crosscut sled with a stop block so every slice
@@ -292,34 +298,171 @@ export function PlanStep({
           The slices are cut {show(recipe.flattenPerFace * 2)} thicker than the finished board to leave room for
           flattening.
         </p>
-      </section>
-
-      <section>
-        <h3>
-          <span className="number">5</span>Arrange and glue the slices
-        </h3>
+      </>
+    ),
+    arrange: (
+      <>
         <p>
           Roll each slice a quarter turn so the end grain faces up. {info.arrange}
           {flipped.length > 0 && state.pattern === 'chaotic' && ` Slices to turn: ${flipped.join(', ')}.`}
         </p>
-        <p>Check the pattern against the picture above, then glue the slices together.</p>
-      </section>
-
-      <section>
-        <h3>
-          <span className="number">6</span>Trim and flatten
-        </h3>
+        <p>Check the pattern against the picture, then glue the slices together.</p>
+      </>
+    ),
+    flatten: (
+      <>
         <p>
           {trimmed
             ? `Trim both ends square, taking the board to ${show(board.length)} long. `
             : 'Trim the edges just enough to clean them up. '}
           Flatten both faces down to <strong>{show(board.thickness)}</strong> thick.
         </p>
-        <p className="help">
-          Flatten with a router sled or a drum sander. Do not run an end grain board through a thickness planer: the
-          knives can catch the fibres and throw or shatter the board.
-        </p>
-      </section>
+        {!guide && (
+          <p className="help">
+            Flatten with a router sled or a drum sander. Do not run an end grain board through a thickness planer: the
+            knives can catch the fibres and throw or shatter the board.
+          </p>
+        )}
+      </>
+    ),
+  };
+
+  const diagrams: Partial<Record<StageId, { picture: ReactNode; caption: string }>> = {
+    strips: {
+      picture: (
+        <div className="stock-cuts">
+          {boardRows.map((row) => {
+            const size = sizeOf(row.planned.stockId);
+            return size ? (
+              <div key={row.key}>
+                <StockCutDiagram
+                  planned={row.planned}
+                  width={size.width}
+                  length={size.length}
+                  kerf={state.kerf}
+                  label={`${row.name}: cut to length, then ${row.rip.toLowerCase()}`}
+                />
+                <span>{row.name}</span>
+              </div>
+            ) : null;
+          })}
+        </div>
+      ),
+      caption: 'Each board from above. Coloured areas are strips; hatched areas are left over.',
+    },
+    panel: {
+      picture: <PanelPreview recipe={recipe} cuts={false} />,
+      caption: 'The glued panel from above. Strip 1 is at the top.',
+    },
+    slice: {
+      picture: <PanelPreview recipe={recipe} />,
+      caption: 'Dashed lines are the crosscuts. The first cut squares the end.',
+    },
+    arrange: {
+      picture: (
+        <ArrangeDiagram recipe={recipe} label={`The ${slices} slices in order, end grain up. ${info.arrange}`} />
+      ),
+      caption:
+        'The slices in order, end grain up, before they are pushed together.' +
+        (flipped.length > 0 ? ' ⇄ marks a slice turned end for end.' : '') +
+        (trimmed ? ' Dashed lines show where the ends are trimmed.' : ''),
+    },
+    flatten: {
+      picture: (
+        <FlattenDiagram
+          length={board.length}
+          sliceThickness={recipe.cut.sliceThickness}
+          perFace={recipe.flattenPerFace}
+          label={`The board from the side: ${show(recipe.flattenPerFace)} is removed from each face`}
+        />
+      ),
+      caption: `The board from the side. The hatched layers, ${show(recipe.flattenPerFace)} on each face, are removed. Thickness is drawn at double scale.`,
+    },
+  };
+
+  return (
+    <div className="plan">
+      <h2>{guide ? 'Your build instructions' : 'Your cut list'}</h2>
+      <p className="lead">
+        A {info.name.toLowerCase()} board in {designSpecies(state).map(speciesName).join(' and ')}, finishing at{' '}
+        <strong>
+          {show(board.length)} × {show(board.width)} × {show(board.thickness)} thick
+        </strong>
+        .
+      </p>
+
+      <fieldset className="view-toggle">
+        <legend className="visually-hidden">How much detail to show</legend>
+        <div className="choices">
+          <label className={guide ? 'choice' : 'choice selected'}>
+            <input type="radio" name="detail" checked={!guide} onChange={() => update({ showGuide: false })} />
+            <span className="title">Cut list only</span>
+            <span className="detail">Sizes and counts, for the workshop wall.</span>
+          </label>
+          <label className={guide ? 'choice selected' : 'choice'}>
+            <input type="radio" name="detail" checked={guide} onChange={() => update({ showGuide: true })} />
+            <span className="title">Full instructions</span>
+            <span className="detail">Every step, with pictures, tips, sanding and finishing.</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <Notices notices={design.notices} />
+      {blocked && (
+        <p className="empty">The steps below assume the problems above are fixed. Go back to change the design.</p>
+      )}
+
+      <div className="plan-previews">
+        {!guide && (
+          <figure>
+            <PanelPreview recipe={recipe} />
+            <figcaption>First glue-up, with the slices marked</figcaption>
+          </figure>
+        )}
+        <figure>
+          <BoardPreview board={board} label="The finished board" />
+          <figcaption>Finished board</figcaption>
+        </figure>
+      </div>
+
+      {stages.map((stage, index) => {
+        const diagram = diagrams[stage.id];
+        return (
+          <section key={stage.id}>
+            <h3>
+              <span className="number">{index + 1}</span>
+              {stage.title}
+            </h3>
+            {content[stage.id]}
+            {guide && (
+              <>
+                {diagram && (
+                  <figure className="step-diagram">
+                    {diagram.picture}
+                    <figcaption>{diagram.caption}</figcaption>
+                  </figure>
+                )}
+                <h4>{stage.id === 'care' ? 'Care card' : 'Step by step'}</h4>
+                <ol className="substeps">
+                  {stage.steps.map((step, stepIndex) => (
+                    <li key={stepIndex}>{step}</li>
+                  ))}
+                </ol>
+                {stage.tips.length > 0 && (
+                  <>
+                    <h4>{stage.id === 'care' ? 'Care' : 'Tips'}</h4>
+                    <ul className="tips">
+                      {stage.tips.map((tip) => (
+                        <TipCard key={tip.id} tip={tip} />
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </>
+            )}
+          </section>
+        );
+      })}
 
       <section>
         <h3>Where the wood goes</h3>
@@ -328,6 +471,7 @@ export function PlanStep({
           and flattening
           {board.waste.panelLeftover > 1 ? `, and ${percent(board.waste.panelLeftover)} is spare panel.` : '.'}
         </p>
+        {guide && <p className="help">Tip sources were last read on {SOURCES_CHECKED}.</p>}
       </section>
     </div>
   );

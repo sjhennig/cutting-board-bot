@@ -91,7 +91,7 @@ export function App() {
           {step === 1 && <WoodStep state={state} update={update} />}
           {step === 2 && <PatternStep state={state} update={update} />}
           {step === 3 && <TuneStep state={state} update={update} design={design} />}
-          {step === 4 && <PlanStep state={state} design={design} error={error} />}
+          {step === 4 && <PlanStep state={state} update={update} design={design} error={error} />}
 
           <div className="step-nav">
             {step > 0 && (
@@ -106,7 +106,7 @@ export function App() {
             )}
             {step === STEPS.length - 1 && design && (
               <button type="button" className="primary" onClick={() => window.print()}>
-                Print cut list
+                {state.showGuide ? 'Print instructions' : 'Print cut list'}
               </button>
             )}
           </div>

@@ -715,3 +715,113 @@ figcaption {
 .plan .lead strong {
   white-space: normal;
 }
+
+/* Instructions */
+
+.view-toggle {
+  margin-bottom: 16px;
+}
+
+h4 {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 20px 0 8px;
+}
+
+.step-diagram {
+  margin: 16px 0;
+}
+
+svg.diagram {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+}
+
+svg.diagram text {
+  fill: var(--ink);
+  font-family: inherit;
+}
+
+.stock-cuts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.stock-cuts span {
+  display: block;
+  font-size: 0.88rem;
+  margin-top: 6px;
+}
+
+.stock-cuts svg {
+  max-height: 120px;
+}
+
+.substeps {
+  padding-left: 24px;
+  margin: 0;
+  max-width: 68ch;
+}
+
+.substeps li {
+  padding: 3px 0;
+}
+
+.tips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.tip {
+  background: var(--accent-soft);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  break-inside: avoid;
+}
+
+.tip p {
+  margin: 4px 0 0;
+  max-width: 68ch;
+}
+
+.tip strong {
+  white-space: normal;
+}
+
+.source {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.other-view {
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  padding-top: 8px;
+  margin-top: 8px !important;
+}
+
+@media print {
+  .view-toggle {
+    display: none;
+  }
+
+  .tip,
+  figure {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* On paper a link cannot be clicked, so print its address. */
+  .source a::after {
+    content: ' (' attr(href) ')';
+    word-break: break-all;
+  }
+}

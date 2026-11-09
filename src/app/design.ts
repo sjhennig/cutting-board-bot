@@ -93,6 +93,8 @@ export interface DesignState {
   /** Finished thickness, after flattening. */
   boardThickness: number;
   seed: number;
+  /** Show full instructions on the last step, not just the cut list. */
+  showGuide: boolean;
 }
 
 export const END_TRIM = inch(1 / 2);
@@ -115,6 +117,7 @@ export const defaultState: DesignState = {
   boardWidth: inch(13),
   boardThickness: inch(1.5),
   seed: 1,
+  showGuide: false,
 };
 
 /** The woods the design uses, in order. */
