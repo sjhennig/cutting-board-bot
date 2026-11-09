@@ -121,6 +121,11 @@ function fitStrip(need: StripNeed, stock: StockBoard): Fit | null {
  * This is a good plan, not a guaranteed optimum.
  */
 export function planCuts(recipe: Recipe, stock: StockBoard[], kerf = recipe.cut.kerf): CutPlan {
+  return planStrips(stripNeeds(recipe), stock, kerf);
+}
+
+/** As `planCuts`, for any list of strips. */
+export function planStrips(allNeeds: StripNeed[], stock: StockBoard[], kerf: number): CutPlan {
   const boards: PlannedBoard[] = stock.flatMap((item) =>
     Array.from({ length: item.quantity }, (_, index) => ({
       stockId: item.id,
@@ -134,7 +139,7 @@ export function planCuts(recipe: Recipe, stock: StockBoard[], kerf = recipe.cut.
   const open: OpenSegment[] = [];
   const shortfalls: Shortfall[] = [];
 
-  const needs = stripNeeds(recipe).sort((a, b) => b.width - a.width);
+  const needs = [...allNeeds].sort((a, b) => b.width - a.width);
   for (const need of needs) {
     const place = (target: OpenSegment, fit: Fit): void => {
       target.segment.strips.push({ ...need, ...fit });

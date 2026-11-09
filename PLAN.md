@@ -15,7 +15,8 @@ The first round of research ran with most websites blocked. A second round, afte
 | Planer safety tip | High | Wood Whisperer article read in full |
 | Tumbling blocks geometry | Medium | Trigonometry is sound; build sequence is from search excerpts |
 | Other build tips | Medium | Reputable sources identified, but pages not read in full |
-| Other designers (CBdesigner, Cutting Board Studio, cuttingboarddesigner.com) | Low | Search excerpts only, or not reachable |
+| cuttingboarddesigner.com | High | Used directly in a browser |
+| Other designers (CBdesigner, Cutting Board Studio) | Low | Search excerpts only |
 | Species hardness figures | Low | Recalled, not checked against the Wood Database |
 
 Phase 0 below closes the remaining gaps before anything is shown to users as fact.
@@ -27,6 +28,7 @@ Phase 0 below closes the remaining gaps before anything is shown to users as fac
 | CBDJS (web, open source) | Models both glue-ups, accounts for kerf, reports waste | No unit labels, no sideways shift (so no brick pattern), no cut list, no instructions |
 | MvRens/CuttingBoard (web, archived) | Multiple source panels, metric and decimal inches, save to file | No kerf, no cut list, no fractional inches |
 | CBdesigner (Windows, 2008) | Kerf setting, material list, PDF | Windows-only, dated, checkerboard-family patterns only |
+| cuttingboarddesigner.com (web, free) | The strongest competitor: about a dozen patterns including chevron, weave and pinwheel; wood textures; build steps; share links; cost estimate | Pattern is typed as a code ("1W 1M 1W"); starts from abstract numbers, not real boards; wood needed is one slab per species in decimal inches (28.675in); no kerf setting visible; build steps say to plane the finished end grain board |
 | Cutting Board Studio (web, beta) | Reported 3D preview and yield figures | Unverified; needs a hands-on look in Phase 0 |
 
 The gaps this project targets:
@@ -192,7 +194,7 @@ Where sources disagree, the app says so instead of picking a side silently. Plan
 |---|---|---|
 | 0. Verify | Research gaps closed (see section 10) | Each low-confidence row in section 1 is confirmed or the feature is cut |
 | 1. Engine (done) | Recipe model, slice geometry, cut list data, tests | Hand-checked checkerboard and brick designs match to 1/64 in. |
-| 2. First usable version | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided |
+| 2. First usable version (done) | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided |
 | 3. Instructions | Step-by-step guide, sourced tips, print layout | Every step has a diagram; every tip has a checked link |
 | 4. Intermediate patterns | Second-generation and angled cuts | Chevron and basket weave render and produce correct cut lists |
 | 5. Advanced patterns | Rhombus engine, tumbling blocks, 3D illusion board | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
@@ -204,6 +206,6 @@ Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 
 1. **Sites still blocked.** Several addresses only work with the "www." prefix, which is treated as a separate site. To allow: www.cuttingboarddesigner.com, www.wood-database.com, www.instructables.com, www.lumberjocks.com, www.thecraftycatsman.com, www.titebond.com, www.finewoodworking.com, www.thisoldhouse.com, www.wwgoa.com, www.fsis.usda.gov.
 2. **Cutting board packs.** Confirm how many strips of what width each pack contains.
-3. **Competitors to try by hand.** cuttingboarddesigner.com and Cutting Board Studio, once reachable.
+3. **Competitor to try by hand.** Cutting Board Studio.
 4. **Remaining tip sources.** Glue figures, finishing and care advice need their pages read in full.
 5. **Tumbling blocks.** Confirm the build sequence against a published guide.
