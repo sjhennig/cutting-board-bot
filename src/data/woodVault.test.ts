@@ -38,8 +38,17 @@ describe('Wood Vault catalog', () => {
   it('builds a checkerboard from blanks with no ripping or planing', () => {
     // Eight 1-1/4 in. blanks, 1-5/8 in. thick, make a 10 in. panel.
     const shop = { ...defaultShop, panelThickness: inch(1.625), sliceThickness: inch(1.5) };
-    const recipe = checkerboard({ species: ['hard-maple', 'black-walnut'], columns: 8, rows: 12, cellWidth: inch(1.25), shop });
-    const stock = ['hard-maple', 'black-walnut'].map((species) => ({ ...find(species, 'blank', 1.25, 24), quantity: 4 }));
+    const recipe = checkerboard({
+      species: ['hard-maple', 'black-walnut'],
+      columns: 8,
+      rows: 12,
+      cellWidth: inch(1.25),
+      shop,
+    });
+    const stock = ['hard-maple', 'black-walnut'].map((species) => ({
+      ...find(species, 'blank', 1.25, 24),
+      quantity: 4,
+    }));
 
     const board = buildBoard(recipe);
     expect(board.length).toBeCloseTo(inch(10), 6);

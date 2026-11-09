@@ -131,7 +131,10 @@ describe('3D illusion board', () => {
 
   it('re-rips the slices to the widths the plan lists, alternating panels', () => {
     const fromPanel = (id: string): number[] =>
-      recipe.slices.filter((slice) => slice.panel === id).map((slice) => slice.ripTo!).sort((a, b) => b - a);
+      recipe.slices
+        .filter((slice) => slice.panel === id)
+        .map((slice) => slice.ripTo!)
+        .sort((a, b) => b - a);
     expect(fromPanel('A')).toEqual([33, 33, 24, 24, 15, 15, 9, 9, 5, 5, 3]);
     expect(fromPanel('B')).toEqual([29, 29, 19, 19, 12, 12, 7, 7, 4, 4]);
     expect(recipe.slices.map((slice) => slice.panel).join('')).toBe('ABABABABABABABABABABA');
@@ -151,7 +154,12 @@ describe('3D illusion board', () => {
 
   it('is symmetrical about both centre lines', () => {
     const at = (x: number, y: number) => speciesAt(recipe, x, y);
-    for (const [x, y] of [[10, 10], [50, 125], [158, 158], [200, 40]] as const) {
+    for (const [x, y] of [
+      [10, 10],
+      [50, 125],
+      [158, 158],
+      [200, 40],
+    ] as const) {
       expect(at(x, y)).toBe(at(317 - x, y));
       expect(at(x, y)).toBe(at(x, 317 - y));
     }
@@ -160,11 +168,23 @@ describe('3D illusion board', () => {
 
 describe('waste accounting', () => {
   const recipes: [string, Recipe][] = [
-    ['stripes', stripes({ strips: [{ species: 'maple', width: 30 }, { species: 'walnut', width: 12 }], rows: 9 })],
+    [
+      'stripes',
+      stripes({
+        strips: [
+          { species: 'maple', width: 30 },
+          { species: 'walnut', width: 12 },
+        ],
+        rows: 9,
+      }),
+    ],
     ['checkerboard', checkerboard({ species: ['maple', 'walnut'], columns: 8, rows: 12, cellWidth: inch(1.5) })],
     ['odd checkerboard', checkerboard({ species: ['maple', 'walnut'], columns: 7, rows: 5, cellWidth: inch(1) })],
     ['brick', brick({ species: ['maple', 'walnut', 'cherry'], columns: 6, rows: 8, brickWidth: inch(3) })],
-    ['chaotic', chaotic({ species: ['maple', 'walnut', 'cherry'], widths: [10, 20, 35], boardLength: 300, rows: 10, seed: 7 })],
+    [
+      'chaotic',
+      chaotic({ species: ['maple', 'walnut', 'cherry'], widths: [10, 20, 35], boardLength: 300, rows: 10, seed: 7 }),
+    ],
     ['3D illusion', illusion3d({ dark: 'walnut', light: 'maple' })],
   ];
 

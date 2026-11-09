@@ -114,12 +114,22 @@ export function WoodStep({ state, update }: StepProps) {
         <legend>Where is the wood coming from?</legend>
         <div className="choices">
           <label className={state.woodMode === 'buy' ? 'choice selected' : 'choice'}>
-            <input type="radio" name="mode" checked={state.woodMode === 'buy'} onChange={() => update({ woodMode: 'buy' })} />
+            <input
+              type="radio"
+              name="mode"
+              checked={state.woodMode === 'buy'}
+              onChange={() => update({ woodMode: 'buy' })}
+            />
             <span className="title">I need to buy wood</span>
             <span className="detail">Pick your woods and get a shopping list from {WOOD_VAULT.name}.</span>
           </label>
           <label className={state.woodMode === 'have' ? 'choice selected' : 'choice'}>
-            <input type="radio" name="mode" checked={state.woodMode === 'have'} onChange={() => update({ woodMode: 'have' })} />
+            <input
+              type="radio"
+              name="mode"
+              checked={state.woodMode === 'have'}
+              onChange={() => update({ woodMode: 'have' })}
+            />
             <span className="title">I already have boards</span>
             <span className="detail">Enter what you have and design around it.</span>
           </label>
@@ -264,7 +274,8 @@ function OwnWood({ state, update }: StepProps) {
                 value=""
                 onChange={(event) => {
                   const board = sizes.find((size) => size.id === event.target.value);
-                  if (board) setDraft({ ...draft, thickness: board.thickness, width: board.width, length: board.length });
+                  if (board)
+                    setDraft({ ...draft, thickness: board.thickness, width: board.width, length: board.length });
                 }}
               >
                 <option value="">Choose a size…</option>
@@ -279,9 +290,24 @@ function OwnWood({ state, update }: StepProps) {
           )}
         </div>
         <div className="row">
-          <LengthInput label="Thickness" value={draft.thickness} unit={state.unit} onChange={(thickness) => setDraft({ ...draft, thickness })} />
-          <LengthInput label="Width" value={draft.width} unit={state.unit} onChange={(width) => setDraft({ ...draft, width })} />
-          <LengthInput label="Length" value={draft.length} unit={state.unit} onChange={(length) => setDraft({ ...draft, length })} />
+          <LengthInput
+            label="Thickness"
+            value={draft.thickness}
+            unit={state.unit}
+            onChange={(thickness) => setDraft({ ...draft, thickness })}
+          />
+          <LengthInput
+            label="Width"
+            value={draft.width}
+            unit={state.unit}
+            onChange={(width) => setDraft({ ...draft, width })}
+          />
+          <LengthInput
+            label="Length"
+            value={draft.length}
+            unit={state.unit}
+            onChange={(length) => setDraft({ ...draft, length })}
+          />
           <div className="field narrow">
             <label htmlFor="add-quantity">How many</label>
             <input
@@ -321,11 +347,9 @@ export function PatternStep({ state, update }: StepProps) {
           return (
             <label
               key={pattern.id}
-              className={[
-                'pattern',
-                state.pattern === pattern.id ? 'selected' : '',
-                enough ? '' : 'unavailable',
-              ].join(' ')}
+              className={['pattern', state.pattern === pattern.id ? 'selected' : '', enough ? '' : 'unavailable'].join(
+                ' ',
+              )}
             >
               <input
                 type="radio"
@@ -375,8 +399,18 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
       <fieldset>
         <legend>Finished board</legend>
         <div className="row">
-          <LengthInput label="Length" value={state.boardLength} unit={state.unit} onChange={(boardLength) => update({ boardLength })} />
-          <LengthInput label="Width" value={state.boardWidth} unit={state.unit} onChange={(boardWidth) => update({ boardWidth })} />
+          <LengthInput
+            label="Length"
+            value={state.boardLength}
+            unit={state.unit}
+            onChange={(boardLength) => update({ boardLength })}
+          />
+          <LengthInput
+            label="Width"
+            value={state.boardWidth}
+            unit={state.unit}
+            onChange={(boardWidth) => update({ boardWidth })}
+          />
           <LengthInput
             label="Thickness"
             value={state.boardThickness}
@@ -450,7 +484,13 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
               <li key={id}>
                 <Swatch species={id} />
                 <span className="title">{speciesName(id)}</span>
-                <button type="button" className="link" disabled={index === 0} onClick={() => move(index, -1)} aria-label={`Move ${speciesName(id)} earlier`}>
+                <button
+                  type="button"
+                  className="link"
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                  aria-label={`Move ${speciesName(id)} earlier`}
+                >
                   Move up
                 </button>
                 <button

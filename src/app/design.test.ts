@@ -3,7 +3,12 @@ import { inch, type StockBoard } from '../engine';
 import { PATTERNS, defaultState, makeDesign, suggestedStripThickness, type DesignState } from './design';
 
 const own = (species: string, thickness: number, quantity: number): StockBoard => ({
-  id: `${species}-${thickness}`, species, thickness: inch(thickness), width: inch(5.25), length: inch(24), quantity,
+  id: `${species}-${thickness}`,
+  species,
+  thickness: inch(thickness),
+  width: inch(5.25),
+  length: inch(24),
+  quantity,
 });
 
 describe('makeDesign', () => {
@@ -35,12 +40,19 @@ describe('makeDesign', () => {
     expect(() => makeDesign({ ...defaultState, buySpecies: [] })).toThrow(/Choose at least one wood/);
   });
 
-  it('says exactly what is missing from the user\'s own boards', () => {
+  it("says exactly what is missing from the user's own boards", () => {
     const state: DesignState = {
-      ...defaultState, woodMode: 'have', pattern: 'brick', cellWidth: inch(3), stripThickness: inch(1.5), canPlane: true,
+      ...defaultState,
+      woodMode: 'have',
+      pattern: 'brick',
+      cellWidth: inch(3),
+      stripThickness: inch(1.5),
+      canPlane: true,
       stock: [own('hard-maple', 1.5, 2), own('black-walnut', 1.625, 2)],
     };
-    const problems = makeDesign(state).notices.filter((notice) => notice.level === 'problem').map((notice) => notice.message);
+    const problems = makeDesign(state)
+      .notices.filter((notice) => notice.level === 'problem')
+      .map((notice) => notice.message);
     expect(problems).toEqual([
       'Not enough Hard maple: 1 more strip needed, 3" wide, 1-1/2" thick and 16-1/8" long.',
       'Not enough Black walnut: 1 more strip needed, 3" wide, 1-1/2" thick and 16-1/8" long.',
@@ -49,7 +61,12 @@ describe('makeDesign', () => {
 
   it('will not plan on planing when there is no planer', () => {
     const state: DesignState = {
-      ...defaultState, woodMode: 'have', cellWidth: inch(1.5), stripThickness: inch(1.5), boardLength: inch(9), canPlane: false,
+      ...defaultState,
+      woodMode: 'have',
+      cellWidth: inch(1.5),
+      stripThickness: inch(1.5),
+      boardLength: inch(9),
+      canPlane: false,
       stock: [own('hard-maple', 1.5, 2), own('black-walnut', 1.625, 2)],
     };
     expect(makeDesign(state).notices.some((notice) => notice.message.includes('no planer'))).toBe(true);
@@ -61,7 +78,12 @@ describe('makeDesign', () => {
     expect(oak.notices.some((notice) => notice.message.startsWith('Red oak:'))).toBe(true);
 
     const tight: DesignState = {
-      ...defaultState, woodMode: 'have', cellWidth: inch(1.5), stripThickness: inch(1.5), boardLength: inch(9), boardWidth: inch(19.5),
+      ...defaultState,
+      woodMode: 'have',
+      cellWidth: inch(1.5),
+      stripThickness: inch(1.5),
+      boardLength: inch(9),
+      boardWidth: inch(19.5),
       stock: [own('hard-maple', 1.5, 2), own('black-walnut', 1.5, 2)],
     };
     // 13 slices need 23 in. of a 24 in. board.
@@ -69,7 +91,11 @@ describe('makeDesign', () => {
   });
 
   it('suggests a strip thickness every chosen wood can supply', () => {
-    const state: DesignState = { ...defaultState, woodMode: 'have', stock: [own('hard-maple', 1.5, 1), own('black-walnut', 1.625, 1)] };
+    const state: DesignState = {
+      ...defaultState,
+      woodMode: 'have',
+      stock: [own('hard-maple', 1.5, 1), own('black-walnut', 1.625, 1)],
+    };
     expect(suggestedStripThickness(state)).toBeCloseTo(inch(1.5), 6);
     expect(suggestedStripThickness(defaultState)).toBeNull();
   });

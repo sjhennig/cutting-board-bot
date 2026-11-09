@@ -11,7 +11,12 @@
   --caution: #7a5200;
   --caution-soft: #fdf3dc;
   --radius: 10px;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   font-size: 17px;
   line-height: 1.5;
   color: var(--ink);

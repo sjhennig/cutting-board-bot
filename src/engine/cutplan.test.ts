@@ -6,8 +6,22 @@ import { checkerboard, defaultShop, illusion3d } from './patterns';
 import { inch } from './units';
 
 // Wood Vault's thick surfaced boards: maple is 1-1/2 in., walnut 1-5/8 in.
-const maple: StockBoard = { id: 'maple-thick', species: 'maple', thickness: inch(1.5), width: inch(5.25), length: inch(24), quantity: 2 };
-const walnut: StockBoard = { id: 'walnut-thick', species: 'walnut', thickness: inch(1.625), width: inch(5.25), length: inch(24), quantity: 2 };
+const maple: StockBoard = {
+  id: 'maple-thick',
+  species: 'maple',
+  thickness: inch(1.5),
+  width: inch(5.25),
+  length: inch(24),
+  quantity: 2,
+};
+const walnut: StockBoard = {
+  id: 'walnut-thick',
+  species: 'walnut',
+  thickness: inch(1.625),
+  width: inch(5.25),
+  length: inch(24),
+  quantity: 2,
+};
 
 const recipe = checkerboard({ species: ['maple', 'walnut'], columns: 8, rows: 12, cellWidth: inch(1.5) });
 
@@ -31,7 +45,14 @@ describe('planCuts', () => {
     const lines = ripList(planCuts(recipe, [maple, walnut]));
     expect(lines).toEqual([
       { species: 'maple', ripWidth: inch(1.5), length: recipe.panels[0]!.length, count: 4, orientation: 'flat' },
-      { species: 'walnut', ripWidth: inch(1.5), length: recipe.panels[0]!.length, count: 4, orientation: 'flat', planeTo: inch(1.5) },
+      {
+        species: 'walnut',
+        ripWidth: inch(1.5),
+        length: recipe.panels[0]!.length,
+        count: 4,
+        orientation: 'flat',
+        planeTo: inch(1.5),
+      },
     ]);
   });
 
@@ -51,7 +72,10 @@ describe('planCuts', () => {
   it('cuts two panel lengths from one long board', () => {
     const short = checkerboard({ species: ['maple', 'walnut'], columns: 8, rows: 6, cellWidth: inch(1.5) });
     // Each length is 10-1/8 in.; a 24 in. board gives two.
-    const plan = planCuts(short, [{ ...maple, quantity: 1 }, { ...walnut, quantity: 1 }]);
+    const plan = planCuts(short, [
+      { ...maple, quantity: 1 },
+      { ...walnut, quantity: 1 },
+    ]);
     expect(plan.shortfalls).toEqual([]);
     expect(plan.boards.map((board) => board.segments.length)).toEqual([2, 2]);
   });
@@ -60,7 +84,12 @@ describe('planCuts', () => {
     // 3/4 in. boards cannot lie flat in a 1-1/2 in. panel, but ripped to 1-1/2 in. and
     // stood on edge each one becomes a 3/4 in. wide strip.
     const thin = (species: string): StockBoard => ({
-      id: `${species}-thin`, species, thickness: inch(0.75), width: inch(5.25), length: inch(24), quantity: 2,
+      id: `${species}-thin`,
+      species,
+      thickness: inch(0.75),
+      width: inch(5.25),
+      length: inch(24),
+      quantity: 2,
     });
     const fine = checkerboard({ species: ['maple', 'walnut'], columns: 8, rows: 6, cellWidth: inch(0.75) });
     const plan = planCuts(fine, [thin('maple'), thin('walnut')]);
@@ -92,7 +121,10 @@ describe('checkDesign', () => {
 
   it('flags a thin board', () => {
     const thin = checkerboard({
-      species: ['maple', 'walnut'], columns: 8, rows: 12, cellWidth: inch(1.5),
+      species: ['maple', 'walnut'],
+      columns: 8,
+      rows: 12,
+      cellWidth: inch(1.5),
       shop: { ...defaultShop, sliceThickness: inch(1) },
     });
     expect(codes(thin)).toEqual(['thin-board']);

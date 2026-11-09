@@ -70,8 +70,7 @@ export const PATTERNS: PatternInfo[] = [
   },
 ];
 
-export const patternInfo = (id: PatternId): PatternInfo =>
-  PATTERNS.find((pattern) => pattern.id === id) as PatternInfo;
+export const patternInfo = (id: PatternId): PatternInfo => PATTERNS.find((pattern) => pattern.id === id) as PatternInfo;
 
 export interface DesignState {
   unit: Unit;

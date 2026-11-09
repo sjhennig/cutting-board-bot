@@ -49,7 +49,11 @@ function requireCount(value: number, name: string): void {
 /** Stripes running the full width of the board. Every slice sits the same way round. */
 export function stripes(options: { strips: Strip[]; rows: number; shop?: Shop }): Recipe {
   requireCount(options.rows, 'Rows');
-  return singlePanelRecipe(options.strips, times(options.rows, () => ({})), options.shop ?? defaultShop);
+  return singlePanelRecipe(
+    options.strips,
+    times(options.rows, () => ({})),
+    options.shop ?? defaultShop,
+  );
 }
 
 /**

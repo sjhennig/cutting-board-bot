@@ -178,9 +178,7 @@ export function planStrips(allNeeds: StripNeed[], stock: StockBoard[], kerf: num
 
     const existing = shortfalls.find(
       (entry) =>
-        entry.panel === need.panel &&
-        entry.species === need.species &&
-        Math.abs(entry.width - need.width) <= EPS,
+        entry.panel === need.panel && entry.species === need.species && Math.abs(entry.width - need.width) <= EPS,
     );
     if (existing) existing.count += 1;
     else shortfalls.push({ ...need, count: 1 });

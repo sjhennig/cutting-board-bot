@@ -13,8 +13,7 @@ export type Unit = 'in' | 'mm';
 export const inch = (inches: number): number => inches * MM_PER_INCH;
 export const toInches = (mm: number): number => mm / MM_PER_INCH;
 
-export const nearlyEqual = (a: number, b: number, tolerance = EPS): boolean =>
-  Math.abs(a - b) <= tolerance;
+export const nearlyEqual = (a: number, b: number, tolerance = EPS): boolean => Math.abs(a - b) <= tolerance;
 
 /**
  * Parse a length as a woodworker would write it and return millimetres.

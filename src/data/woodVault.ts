@@ -32,14 +32,29 @@ const LENGTHS = [24, 36, 47];
 const THIN = [0.5, 0.75];
 
 const standard = (species: string, widths: number[], source: ProductLine['source'] = 'reference'): ProductLine => ({
-  species, line: 'standard', thicknesses: THIN, widths, lengths: LENGTHS, source,
+  species,
+  line: 'standard',
+  thicknesses: THIN,
+  widths,
+  lengths: LENGTHS,
+  source,
 });
 const thick = (species: string, thickness = 1.625, source: ProductLine['source'] = 'reference'): ProductLine => ({
-  species, line: 'thick', thicknesses: [thickness], widths: [5.25], lengths: LENGTHS, source,
+  species,
+  line: 'thick',
+  thicknesses: [thickness],
+  widths: [5.25],
+  lengths: LENGTHS,
+  source,
 });
 /** Cutting board blanks: narrow strips, surfaced and ready to glue. */
 const blank = (species: string): ProductLine => ({
-  species, line: 'blank', thicknesses: [1.625], widths: [0.75, 1, 1.25], lengths: [24], source: 'product-page',
+  species,
+  line: 'blank',
+  thicknesses: [1.625],
+  widths: [0.75, 1, 1.25],
+  lengths: [24],
+  source: 'product-page',
 });
 
 export const WOOD_VAULT_LINES: ProductLine[] = [

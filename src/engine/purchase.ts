@@ -1,4 +1,12 @@
-import { planStrips, stripNeeds, type CutPlan, type PlannedBoard, type Shortfall, type StockBoard, type StripNeed } from './cutplan';
+import {
+  planStrips,
+  stripNeeds,
+  type CutPlan,
+  type PlannedBoard,
+  type Shortfall,
+  type StockBoard,
+  type StripNeed,
+} from './cutplan';
 import type { Recipe } from './types';
 import { EPS } from './units';
 
@@ -74,7 +82,11 @@ export function suggestPurchase(recipe: Recipe, catalog: BuyableBoard[], options
 
     const widths = [...new Set(mine.map((need) => need.width))];
     const parts = widths.map((width) =>
-      bestSingleProduct(mine.filter((need) => need.width === width), products, options),
+      bestSingleProduct(
+        mine.filter((need) => need.width === width),
+        products,
+        options,
+      ),
     );
     const separate: Choice | null = parts.every((part): part is Choice => part !== null)
       ? {

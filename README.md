@@ -18,15 +18,15 @@ Your design is remembered in your browser between visits.
 
 `src/engine` works out a board from a recipe: the panels to glue up, how to slice them, and how to arrange the slices.
 
-| File | What it does |
-|---|---|
-| `types.ts` | The recipe and result shapes |
-| `units.ts` | Reads and writes fractional inches and metric |
-| `board.ts` | Finished size, surface layout, slices needed, where the waste goes |
-| `patterns.ts` | Stripes, checkerboard, brick, chaotic and the 3D illusion board |
-| `cutplan.ts` | Which stock board each strip is cut from, and what is missing |
-| `purchase.ts` | What to buy from a catalog for a design |
-| `checks.ts` | Warnings: panel too short, board too thin, pieces too narrow |
+| File          | What it does                                                       |
+| ------------- | ------------------------------------------------------------------ |
+| `types.ts`    | The recipe and result shapes                                       |
+| `units.ts`    | Reads and writes fractional inches and metric                      |
+| `board.ts`    | Finished size, surface layout, slices needed, where the waste goes |
+| `patterns.ts` | Stripes, checkerboard, brick, chaotic and the 3D illusion board    |
+| `cutplan.ts`  | Which stock board each strip is cut from, and what is missing      |
+| `purchase.ts` | What to buy from a catalog for a design                            |
+| `checks.ts`   | Warnings: panel too short, board too thin, pieces too narrow       |
 
 `src/data` holds the species list (with food-suitability ratings) and the Wood Vault catalog.
 

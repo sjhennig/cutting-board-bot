@@ -1,31 +1,20 @@
 import type { BoardResult, Cell, Panel, PanelReport, Recipe, SliceSpec } from './types';
 import { EPS } from './units';
 
-export const panelWidth = (panel: Panel): number =>
-  panel.strips.reduce((sum, strip) => sum + strip.width, 0);
+export const panelWidth = (panel: Panel): number => panel.strips.reduce((sum, strip) => sum + strip.width, 0);
 
 /**
  * How many slices of `sliceThickness` a panel of `length` yields.
  * Each slice costs its thickness plus one kerf, except that the last needs no kerf after it.
  */
-export function slicesFromLength(
-  length: number,
-  sliceThickness: number,
-  kerf: number,
-  endTrim = 0,
-): number {
+export function slicesFromLength(length: number, sliceThickness: number, kerf: number, endTrim = 0): number {
   const usable = length - endTrim;
   if (usable < sliceThickness - EPS) return 0;
   return Math.floor((usable + kerf + EPS) / (sliceThickness + kerf));
 }
 
 /** Shortest panel that yields `count` slices. The inverse of `slicesFromLength`. */
-export function lengthForSlices(
-  count: number,
-  sliceThickness: number,
-  kerf: number,
-  endTrim = 0,
-): number {
+export function lengthForSlices(count: number, sliceThickness: number, kerf: number, endTrim = 0): number {
   if (count <= 0) return 0;
   return count * sliceThickness + (count - 1) * kerf + endTrim;
 }
@@ -60,8 +49,7 @@ export function buildBoard(recipe: Recipe): BoardResult {
 
   // The board spans only the x range that every slice covers; the rest is trimmed off.
   const left = Math.max(...slices.map((slice) => slice.shift ?? 0)) + trimEnds;
-  const right =
-    Math.min(...slices.map((slice) => (slice.shift ?? 0) + panelWidth(panelOf(slice)))) - trimEnds;
+  const right = Math.min(...slices.map((slice) => (slice.shift ?? 0) + panelWidth(panelOf(slice)))) - trimEnds;
   if (right - left <= EPS) {
     throw new Error('The slices are shifted or trimmed so far that nothing is left of the board.');
   }
