@@ -81,19 +81,25 @@ This family does not fit the slice model, so it gets its own small engine.
 
 ## 4. Pattern library
 
-| Pattern                        | Level        | Engine               | How it is made                                                 |
-| ------------------------------ | ------------ | -------------------- | -------------------------------------------------------------- |
-| Stripes (even or varied width) | Beginner     | Slice                | No rearranging, or mirror alternate slices                     |
-| Checkerboard                   | Beginner     | Slice                | Two species, even strip count, flip alternate slices           |
-| Brick                          | Beginner     | Slice                | Shift alternate slices by half a strip; trim the ends          |
-| Chaotic                        | Beginner     | Slice                | Random strip widths, random shift per slice                    |
-| Plaid                          | Intermediate | Slice                | Thin accent strips in both generations                         |
-| Framed                         | Intermediate | Slice                | End grain border blocks only; never long grain                 |
-| Basket weave                   | Intermediate | Slice                | Square logs of three strips, alternate tiles turned 90 degrees |
-| Chevron / zigzag               | Intermediate | Slice, 2 generations | Striped end grain slab re-cut at an angle, alternates flipped  |
-| Pixel art                      | Intermediate | Slice                | One panel recipe per distinct row                              |
-| Tumbling blocks                | Advanced     | Rhombus              | Three tones, hexagonal logs                                    |
-| 3D illusion (MTM style)        | Advanced     | Slice, two panels    | Shrinking strip widths, slices re-ripped to shrinking widths   |
+| Pattern                        | Level        | Engine            | How it is made                                                                      |
+| ------------------------------ | ------------ | ----------------- | ----------------------------------------------------------------------------------- |
+| Stripes (even or varied width) | Beginner     | Slice             | No rearranging, or mirror alternate slices                                          |
+| Checkerboard                   | Beginner     | Slice             | Two species, even strip count, flip alternate slices                                |
+| Brick                          | Beginner     | Slice             | Shift alternate slices by half a strip; trim the ends                               |
+| Chaotic                        | Beginner     | Slice             | Random strip widths, random shift per slice                                         |
+| Plaid                          | Intermediate | Slice             | Thin accent strips in both generations                                              |
+| Framed                         | Intermediate | Slice             | End grain border blocks only; never long grain                                      |
+| Basket weave                   | Intermediate | Slice             | Square tiles of three strips laid in a grid, alternate tiles turned a quarter turn  |
+| Chevron / zigzag               | Intermediate | Slice             | Strips ripped with the blade tilted 30 degrees; alternate slices turned upside down |
+| Pixel art                      | Intermediate | Slice             | One panel recipe per distinct row                                                   |
+| Tumbling blocks                | Advanced     | Rhombus           | Three tones, hexagonal logs                                                         |
+| 3D illusion (MTM style)        | Advanced     | Slice, two panels | Shrinking strip widths, slices re-ripped to shrinking widths                        |
+
+### What Phase 4 changed
+
+The first version of this plan assumed a chevron needs a second glue-up, sawn at an angle. That wastes two large corners of the slab. The better method, and the one cuttingboarddesigner.com uses, is a single glue-up of strips ripped with a tilted blade: each strip then shows as a slanted band on the end grain, and turning alternate slices upside down mirrors the slant into a zigzag. The engine models that, and no second-generation machinery was needed.
+
+Plaid, framed and pixel art boards are not built yet. Plaid and framed need the interface to handle two different panels in one design, which the engine already supports.
 
 ### How the 3D illusion board is made (confirmed from MTM Wood's plan)
 
@@ -189,15 +195,15 @@ Where sources disagree, the app says so instead of picking a side silently. Plan
 
 ## 9. Phases
 
-| Phase                          | Delivers                                                   | Done when                                                                                          |
-| ------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 0. Verify                      | Research gaps closed (see section 10)                      | Each low-confidence row in section 1 is confirmed or the feature is cut                            |
-| 1. Engine (done)               | Recipe model, slice geometry, cut list data, tests         | Hand-checked checkerboard and brick designs match to 1/64 in.                                      |
-| 2. First usable version (done) | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided                                           |
-| 3. Instructions (done)         | Step-by-step guide, sourced tips, print layout             | Every step has a diagram; every tip has a checked link                                             |
-| 4. Intermediate patterns       | Second-generation and angled cuts                          | Chevron and basket weave render and produce correct cut lists                                      |
-| 5. Advanced patterns           | Rhombus engine, tumbling blocks, 3D illusion board         | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
-| 6. Polish                      | Grain textures, share links, cost estimate, shopping list  | -                                                                                                  |
+| Phase                           | Delivers                                                   | Done when                                                                                          |
+| ------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 0. Verify                       | Research gaps closed (see section 10)                      | Each low-confidence row in section 1 is confirmed or the feature is cut                            |
+| 1. Engine (done)                | Recipe model, slice geometry, cut list data, tests         | Hand-checked checkerboard and brick designs match to 1/64 in.                                      |
+| 2. First usable version (done)  | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided                                           |
+| 3. Instructions (done)          | Step-by-step guide, sourced tips, print layout             | Every step has a diagram; every tip has a checked link                                             |
+| 4. Intermediate patterns (done) | Basket weave and chevron                                   | Chevron and basket weave render and produce correct cut lists                                      |
+| 5. Advanced patterns            | Rhombus engine, tumbling blocks, 3D illusion board         | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
+| 6. Polish                       | Grain textures, share links, cost estimate, shopping list  | -                                                                                                  |
 
 Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 

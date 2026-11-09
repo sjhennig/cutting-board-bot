@@ -2,13 +2,13 @@
 
 A browser-based designer for end grain cutting boards. It takes the wood you have, lets you pick a pattern, and produces a cut list and build instructions.
 
-See [PLAN.md](PLAN.md) for the full plan. Phases 1 to 3 are built: the geometry engine, a five-step designer that ends in a printable cut list, and optional step-by-step instructions with sourced tips.
+See [PLAN.md](PLAN.md) for the full plan. Phases 1 to 4 are built: the geometry engine, a five-step designer that ends in a printable cut list, optional step-by-step instructions with sourced tips, and two intermediate patterns.
 
 ## Using the designer
 
 1. **Your shop:** units, saw blade width, and whether you have a planer.
 2. **Your wood:** pick woods to buy from The Wood Vault, or enter boards you already have.
-3. **Pattern:** checkerboard, brick, stripes or chaotic.
+3. **Pattern:** checkerboard, brick, stripes or chaotic for beginners; basket weave or chevron for a step up.
 4. **Size:** the board you want, with a live preview and warnings.
 5. **Cut list:** what to buy, how to cut each board, and the glue-up order. Switch on "Full instructions" for a picture and tips at every step, plus sanding, oiling and care. Print either from here.
 
