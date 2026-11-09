@@ -596,6 +596,11 @@ table.fence {
 
 /* Cut list */
 
+.plan td:not(:last-child),
+.plan tbody th {
+  white-space: nowrap;
+}
+
 .plan section {
   margin-top: 28px;
   padding-top: 20px;
@@ -693,7 +698,15 @@ figcaption {
     padding: 0;
   }
 
-  .plan section {
+  /* Keep headings with what follows, and never split a table row, picture or tip. */
+  h3,
+  h4 {
+    break-after: avoid;
+  }
+
+  tr,
+  figure,
+  .tip {
     break-inside: avoid;
   }
 
