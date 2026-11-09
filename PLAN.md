@@ -4,19 +4,21 @@ A browser-based designer that takes the wood a person has (or can buy), lets the
 
 ## 1. How far to trust the research behind this plan
 
-The research was done from an environment whose network blocks most websites. Only github.com pages were read in full. Everything else comes from search-result excerpts or from geometric reasoning.
+The first round of research ran with most websites blocked. A second round, after woodvault.com, mtmwood.com and thewoodwhisperer.com were opened up, read those three sites directly.
 
 | Area | Confidence | What it rests on |
 |---|---|---|
+| Wood Vault catalog | High | Product listings read directly (November 2026) |
+| MTM Wood 3D board method | High for one design | MTM Wood's own free plan, "3D End Grain Cutting Board #1", read in full |
 | Open-source designers (CBDJS, MvRens/CuttingBoard) | High | Repositories read directly |
-| Other designers (CBdesigner, Cutting Board Studio, iOS apps) | Low | Search excerpts only |
 | Slice-based pattern geometry (checkerboard, brick, stripes, chevron) | High | Simple arithmetic, consistent with excerpts |
-| Tumbling blocks geometry | Medium | Trigonometry is sound; build sequence is from excerpts |
-| MTM Wood style 3D boards | Low | Reasoning only; no source confirmed strip widths or sequences |
-| Wood Vault catalog | Medium-low | Search excerpts of woodvault.com; prices may be stale |
-| Build tips | Medium | Reputable sources identified, but pages not read in full |
+| Planer safety tip | High | Wood Whisperer article read in full |
+| Tumbling blocks geometry | Medium | Trigonometry is sound; build sequence is from search excerpts |
+| Other build tips | Medium | Reputable sources identified, but pages not read in full |
+| Other designers (CBdesigner, Cutting Board Studio, cuttingboarddesigner.com) | Low | Search excerpts only, or not reachable |
+| Species hardness figures | Low | Recalled, not checked against the Wood Database |
 
-Phase 0 below exists to close these gaps before anything is shown to users as fact.
+Phase 0 below closes the remaining gaps before anything is shown to users as fact.
 
 ## 2. What existing tools get wrong
 
@@ -44,9 +46,11 @@ This matters because the preview, the cut list and the instructions are then all
 
 A recipe is a list of generations. Each generation has:
 
-- **Laminate:** an ordered list of strips (species, width), all at one thickness `T` and length `L`.
+- **Laminate:** one or more panels, each an ordered list of strips (species, width) at one thickness `T` and length `L`.
 - **Cut:** slice thickness `t`, kerf `k`, cut angle (90 degrees unless stated).
-- **Arrange:** per slice, any of flip end for end, rotate, shift sideways by a distance.
+- **Arrange:** an ordered list of slices, each naming the panel it came from, plus any of: flip end for end, rotate, shift sideways, or re-rip to a narrower width.
+
+Multiple panels and per-slice re-ripping are needed for the 3D boards (see section 4). Building them into the model from the start avoids a rewrite later.
 
 A pattern is a preset that writes a recipe from a few friendly inputs (target size, species, cell size).
 
@@ -88,9 +92,21 @@ This family does not fit the slice model, so it gets its own small engine.
 | Chevron / zigzag | Intermediate | Slice, 2 generations | Striped end grain slab re-cut at an angle, alternates flipped |
 | Pixel art | Intermediate | Slice | One panel recipe per distinct row |
 | Tumbling blocks | Advanced | Rhombus | Three tones, hexagonal logs |
-| 3D steps / bulge / weave | Advanced | Slice, 2 generations | Graded strip widths, mirrored or shifted slices |
+| 3D illusion (MTM style) | Advanced | Slice, two panels | Shrinking strip widths, slices re-ripped to shrinking widths |
 
-The 3D row is the least certain. It is scheduled last and depends on Phase 0 confirming the method from real build guides.
+### How the 3D illusion board is made (confirmed from MTM Wood's plan)
+
+The effect comes from rectangles that shrink towards the centre in both directions. It is a single-generation board, not a two-generation one as first assumed.
+
+1. Make two panels of light and dark strips. The second is a colour negative of the first.
+2. Strip widths shrink towards the centre and grow again. In MTM's plan, in mm: 38, 29, 24, 19, 15, 12, 9, 7, 5, 4, 3, then back out, alternating tone (21 strips). Each step is roughly three quarters of the last.
+3. Crosscut both panels into slices (42 mm in the plan, which sets board thickness) and turn them end grain up.
+4. Re-rip each slice to a width from the same shrinking sequence: 33, 24, 15, 9, 5, 3 mm from panel one; 29, 19, 12, 7, 4 mm from panel two.
+5. Interleave the slices, alternating panels, in the same shrink-then-grow order, and glue.
+
+Practical notes from the plan: cut strips 1 to 1.5 mm oversize and sand to final size; edge strips are made 5 mm wider and trimmed after glue-up; align by eye on the centre rectangles, because slices slip under clamp pressure and cannot be corrected.
+
+The other 3D variants (steps, weave) are still unconfirmed. MTM sells plans for those; they stay out of scope unless a source is found.
 
 ## 5. User experience
 
@@ -114,17 +130,31 @@ Guard rails run continuously and explain themselves in plain language:
 
 ## 6. Wood sourcing
 
-The Wood Vault (woodvault.com) appears to be an Ottawa-area Canadian retailer. Its range suits pre-populated options well:
+The Wood Vault (woodvault.com) is an Ottawa-area Canadian retailer. Its listings, read directly in November 2026, suit pre-populated options well.
 
-- **Cutting board packs:** 12 strips, 1-5/8 in. thick, 12 or 24 in. long, in domestic (walnut, maple, cherry) and tropical mixes.
-- **Strip blanks:** 1-5/8 in. thick, 24 in. long, in widths from 1/4 to 1-1/4 in.
-- **Surfaced boards:** 1/2, 3/4 and 1-5/8 in. thick; 24, 36 and 47 in. long.
+| Product | Thickness | Width | Length | Species |
+|---|---|---|---|---|
+| Cutting board packs | 1-5/8 in. | makes a 12 in. panel | 12 or 24 in. | Hardwood (walnut, maple, cherry); Tropical (padauk, purpleheart, limba); Exotic (sapele, purpleheart, limba) |
+| Cutting board blanks | 1-5/8 in. | 3/4, 1 or 1-1/4 in. | 24 in. | Cherry, limba, maple, padauk, purpleheart, sapele, walnut |
+| Surfaced boards, thick | 1-5/8 in. (maple and poplar 1-1/2 in.) | mostly 5-1/4 in. | 24, 36, 47 in. | About 30 species |
+| Surfaced boards, thin | 1/2 or 3/4 in. | 3-1/2 to 9-1/4 in. by species | 24, 36, 47 in. | About 45 species |
 
-Approach: a hand-curated catalog file in the repository, not live scraping. Each entry holds species, dimensions and a link to the product page, with no prices.
+Points that affect the design:
 
-Reasons: the site's terms of use have not been read, prices mix two currencies and go stale, and a static file keeps the app free of any server. If the terms allow it, a refresh script can be added later.
+- **Blanks are the natural beginner route.** They arrive ready to glue, so a first board needs no jointer or planer.
+- **Thick maple is 1-1/2 in., while most other species are 1-5/8 in.** Mixing them leaves steps in the panel. The app must warn about this and add a planing step.
+- **Listed dimensions can vary by 1/4 in.** The app should tell users to measure their boards and let them correct the numbers.
+- **47 in. is the longest length that ships.**
+- **Wood Vault sells limba in its own cutting board packs**, although it is softer and more open-pored than ideal. The app flags it with an explanation and does not block it.
 
-Each species also carries a display colour, a hardness figure and a food-suitability flag. The hardness figures need checking against the Wood Database in Phase 0.
+**Catalog approach: a hand-curated file, with no automated importing.** Wood Vault's terms of service prohibit crawling or scraping the site, and copying it without written permission. The catalog file will hold only species, dimensions and a link to the product page: no prices, descriptions or images.
+
+Two things follow from this:
+
+- While verifying the catalog I made a small number of requests to the store's public product feed before reading the terms. I have stopped, and nothing from those requests is stored in the repository.
+- It is worth emailing Wood Vault to ask permission. A tool that sends them customers is in their interest, and written permission would allow prices and stock to be shown later.
+
+Each species also carries a display colour, a hardness figure and a food-suitability flag. The hardness figures still need checking against the Wood Database.
 
 ## 7. Outputs
 
@@ -137,13 +167,13 @@ Each species also carries a display colour, a hardness figure and a food-suitabi
 
 **Instructions.** Generated from the recipe, one step per operation, each with a diagram of the workpiece at that point. Tips attach to the step where they apply, each with its source link. Examples:
 
-- Flatten end grain with a router sled or drum sander, not a thickness planer.
+- Flatten end grain with a router sled or drum sander, not a thickness planer. (Confirmed: the Wood Whisperer article and its readers report kickback, shattered blades and destroyed boards.)
 - Use a crosscut sled with a stop block; never the rip fence and miter gauge together.
 - Titebond III gives roughly twice the open time of Titebond II; glue large boards in sub-assemblies.
 - Sand through the grits to 220; finish with mineral oil, then oil and beeswax.
 - A care card to hand over with a gifted board.
 
-Where sources disagree (planing with sacrificial strips, raising the grain, finish choice), the app says so instead of picking a side silently.
+Where sources disagree, the app says so instead of picking a side silently. Planing is the clearest case: MTM Wood does plane end grain, with sacrificial rails and passes of 0.3 to 0.5 mm, while the Wood Whisperer advises never doing it. The app recommends the sled or sander and presents planing as an expert-only option with those precautions.
 
 ## 8. Technical approach
 
@@ -162,15 +192,15 @@ Where sources disagree (planing with sacrificial strips, raising the grain, fini
 | 2. First usable version | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided |
 | 3. Instructions | Step-by-step guide, sourced tips, print layout | Every step has a diagram; every tip has a checked link |
 | 4. Intermediate patterns | Second-generation and angled cuts | Chevron and basket weave render and produce correct cut lists |
-| 5. Advanced patterns | Rhombus engine, tumbling blocks, 3D boards | Tumbling blocks verified against a published build |
+| 5. Advanced patterns | Rhombus engine, tumbling blocks, 3D illusion board | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
 | 6. Polish | Grain textures, share links, cost estimate, shopping list | - |
 
 Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 
 ## 10. Open items
 
-1. **Network access.** Allow woodvault.com, wood-database.com, mtmwood.com, instructables.com, thewoodwhisperer.com and lumberjocks.com in the environment's network settings so Phase 0 can read sources in full.
-2. **Confirm the supplier.** Is woodvault.com (Canadian) the intended Wood Vault?
-3. **Wood Vault terms of use.** Read before deciding whether the catalog may ever be imported automatically.
-4. **MTM-style 3D boards.** Confirm the real method, or drop them from scope.
-5. **Cutting Board Studio.** Try it by hand; it is the closest modern competitor.
+1. **Sites still blocked.** Several addresses only work with the "www." prefix, which is treated as a separate site. To allow: www.cuttingboarddesigner.com, www.wood-database.com, www.instructables.com, www.lumberjocks.com, www.thecraftycatsman.com, www.titebond.com, www.finewoodworking.com, www.thisoldhouse.com, www.wwgoa.com, www.fsis.usda.gov.
+2. **Wood Vault permission.** Email them about listing their products (see section 6).
+3. **Competitors to try by hand.** cuttingboarddesigner.com and Cutting Board Studio, once reachable.
+4. **Remaining tip sources.** Glue figures, finishing and care advice need their pages read in full.
+5. **Tumbling blocks.** Confirm the build sequence against a published guide.
