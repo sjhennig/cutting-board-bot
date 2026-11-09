@@ -1,4 +1,4 @@
-import { sizePanels } from './board';
+import { lengthForSlices, sizePanels, slicesFromLength } from './board';
 import type { Panel, Recipe, SliceSpec, Strip } from './types';
 import { inch } from './units';
 
@@ -226,6 +226,11 @@ export function basketWeave(options: {
   rows: number;
   /** How many strips make one tile. */
   stripsPerTile?: number;
+  /**
+   * The longest log that can be made, usually the length of the longest board. The tiles
+   * are split across as many identical logs as that needs.
+   */
+  maxLogLength?: number;
   shop?: Shop;
 }): Recipe {
   const { species, columns, rows } = options;
@@ -243,11 +248,31 @@ export function basketWeave(options: {
     species: (index === 0 || index === stripsPerTile - 1 ? species[0] : species[1]) as string,
     width: tile / stripsPerTile,
   }));
-  const slices = times(columns * rows, (index) => {
-    const row = Math.floor(index / columns);
-    return (row + (index % columns)) % 2 === 1 ? { turn: true } : {};
-  });
-  return { ...singlePanelRecipe(strips, slices, shop), columns };
+  const total = columns * rows;
+  const { sliceThickness, kerf, endTrim } = shop;
+  const fits =
+    options.maxLogLength === undefined ? total : slicesFromLength(options.maxLogLength, sliceThickness, kerf, endTrim);
+  if (fits < 1) throw new Error('The longest board is too short to cut even one tile from.');
+  const logs = Math.ceil(total / fits);
+  const perLog = Math.ceil(total / logs);
+
+  return {
+    // Every log is the same length, so they can be glued up and sliced identically.
+    panels: times(logs, (log) => ({
+      id: String.fromCharCode(65 + log),
+      strips,
+      thickness: tile,
+      length: lengthForSlices(perLog, sliceThickness, kerf, endTrim),
+    })),
+    cut: { sliceThickness, kerf, endTrim },
+    slices: times(total, (index) => {
+      const row = Math.floor(index / columns);
+      const panel = String.fromCharCode(65 + Math.floor(index / perLog));
+      return (row + (index % columns)) % 2 === 1 ? { panel, turn: true } : { panel };
+    }),
+    flattenPerFace: shop.flattenPerFace,
+    columns,
+  };
 }
 
 /**

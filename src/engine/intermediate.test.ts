@@ -71,6 +71,25 @@ describe('basket weave', () => {
     wasteBalances(recipe);
   });
 
+  it('splits the tiles across identical logs when one would be too long', () => {
+    // A 24 in. board yields 14 tiles, so 48 tiles need 4 logs of 12.
+    const split = basketWeave({ species: ['hard-maple', 'black-walnut'], columns: 8, rows: 6, maxLogLength: inch(24) });
+    expect(split.panels.map((panel) => panel.id)).toEqual(['A', 'B', 'C', 'D']);
+    expect(new Set(split.panels.map((panel) => panel.length)).size).toBe(1);
+    expect(split.panels[0]!.length).toBeCloseTo(inch(19.875), 6);
+    const result = buildBoard(split);
+    expect(result.panels.map((panel) => panel.slicesNeeded)).toEqual([12, 12, 12, 12]);
+    expect(result.cells).toEqual(board.cells);
+    wasteBalances(split);
+
+    // 50 tiles do not divide evenly: 4 logs sized for 13, with two spare tiles.
+    const uneven = buildBoard(
+      basketWeave({ species: ['hard-maple', 'black-walnut'], columns: 10, rows: 5, maxLogLength: inch(24) }),
+    );
+    expect(uneven.panels.map((panel) => panel.slicesNeeded)).toEqual([13, 13, 13, 11]);
+    expect(uneven.panels.map((panel) => panel.slicesAvailable)).toEqual([13, 13, 13, 13]);
+  });
+
   it('rejects a last row that is not full', () => {
     expect(() => buildBoard({ ...recipe, slices: recipe.slices.slice(0, 47) })).toThrow(/incomplete/);
   });
