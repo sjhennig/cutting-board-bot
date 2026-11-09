@@ -12,9 +12,8 @@ The first round of research ran with most websites blocked. A second round, afte
 | MTM Wood 3D board method                                             | High for one design | MTM Wood's own free plan, "3D End Grain Cutting Board #1", read in full |
 | Open-source designers (CBDJS, MvRens/CuttingBoard)                   | High                | Repositories read directly                                              |
 | Slice-based pattern geometry (checkerboard, brick, stripes, chevron) | High                | Simple arithmetic, consistent with excerpts                             |
-| Planer safety tip                                                    | High                | Wood Whisperer article read in full                                     |
 | Tumbling blocks geometry                                             | Medium              | Trigonometry is sound; build sequence is from search excerpts           |
-| Other build tips                                                     | Medium              | Reputable sources identified, but pages not read in full                |
+| Build tips in the app                                                | High                | Every tip's source page read in full on 9 November 2026                 |
 | cuttingboarddesigner.com                                             | High                | Used directly in a browser                                              |
 | Other designers (CBdesigner, Cutting Board Studio)                   | Low                 | Search excerpts only                                                    |
 | Species hardness figures                                             | Low                 | Recalled, not checked against the Wood Database                         |
@@ -195,7 +194,7 @@ Where sources disagree, the app says so instead of picking a side silently. Plan
 | 0. Verify                      | Research gaps closed (see section 10)                      | Each low-confidence row in section 1 is confirmed or the feature is cut                            |
 | 1. Engine (done)               | Recipe model, slice geometry, cut list data, tests         | Hand-checked checkerboard and brick designs match to 1/64 in.                                      |
 | 2. First usable version (done) | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided                                           |
-| 3. Instructions                | Step-by-step guide, sourced tips, print layout             | Every step has a diagram; every tip has a checked link                                             |
+| 3. Instructions (done)         | Step-by-step guide, sourced tips, print layout             | Every step has a diagram; every tip has a checked link                                             |
 | 4. Intermediate patterns       | Second-generation and angled cuts                          | Chevron and basket weave render and produce correct cut lists                                      |
 | 5. Advanced patterns           | Rhombus engine, tumbling blocks, 3D illusion board         | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
 | 6. Polish                      | Grain textures, share links, cost estimate, shopping list  | -                                                                                                  |
@@ -204,8 +203,8 @@ Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 
 ## 10. Open items
 
-1. **Sites still blocked.** Several addresses only work with the "www." prefix, which is treated as a separate site. To allow: www.cuttingboarddesigner.com, www.wood-database.com, www.instructables.com, www.lumberjocks.com, www.thecraftycatsman.com, www.titebond.com, www.finewoodworking.com, www.thisoldhouse.com, www.wwgoa.com, www.fsis.usda.gov.
+1. **Sites not yet read.** www.instructables.com and www.lumberjocks.com, for tumbling block build guides; www.thecraftycatsman.com, for the Cutting Board Studio competitor.
 2. **Cutting board packs.** Confirm how many strips of what width each pack contains.
 3. **Competitor to try by hand.** Cutting Board Studio.
-4. **Remaining tip sources.** Glue figures, finishing and care advice need their pages read in full.
+4. **USDA sanitising advice.** The USDA cutting board page refuses automated visits, so its bleach-sanitising advice is not in the app. Read it by hand before adding.
 5. **Tumbling blocks.** Confirm the build sequence against a published guide.
