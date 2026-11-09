@@ -17,6 +17,8 @@ See [PLAN.md](PLAN.md) for the full plan. Phase 1, the geometry engine, is built
 | `cutplan.ts` | Which stock board each strip is cut from, and what is missing |
 | `checks.ts` | Warnings: panel too short, board too thin, pieces too narrow |
 
+`src/data` holds the species list (with food-suitability ratings) and the Wood Vault catalog.
+
 ## Running the tests
 
 ```bash

@@ -147,12 +147,15 @@ Points that affect the design:
 - **47 in. is the longest length that ships.**
 - **Wood Vault sells limba in its own cutting board packs**, although it is softer and more open-pored than ideal. The app flags it with an explanation and does not block it.
 
-**Catalog approach: a hand-curated file, with no automated importing.** Wood Vault's terms of service prohibit crawling or scraping the site, and copying it without written permission. The catalog file will hold only species, dimensions and a link to the product page: no prices, descriptions or images.
+**Catalog approach: a hand-entered file, with nothing fetched from the site.** Wood Vault's terms of service prohibit crawling or scraping. The catalog (`src/data/woodVault.ts`) is built from the project's own Wood Vault reference document, and holds only species, dimensions and the supplier's rules: no prices, descriptions or images. Each line records where it came from.
 
-Two things follow from this:
+Three things in the catalog go beyond the reference document, all read from product pages in November 2026:
 
-- While verifying the catalog I made a small number of requests to the store's public product feed before reading the terms. I have stopped, and nothing from those requests is stored in the repository.
-- It is worth emailing Wood Vault to ask permission. A tool that sends them customers is in their interest, and written permission would allow prices and stock to be shown later.
+- **Cutting board blanks.** The reference document covers surfaced boards only.
+- **Hard maple, red oak and white oak widths.** The document inferred 4-3/4 in. and asked for verification; the product pages list 5-1/4, 7-1/4 and 9-1/4 in.
+- **Thick hard maple at 1-1/2 in.**
+
+Cutting board packs are not in the catalog yet, because the width of the strips in a pack is not confirmed.
 
 Each species also carries a display colour, a hardness figure and a food-suitability flag. The hardness figures still need checking against the Wood Database.
 
@@ -200,7 +203,7 @@ Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 ## 10. Open items
 
 1. **Sites still blocked.** Several addresses only work with the "www." prefix, which is treated as a separate site. To allow: www.cuttingboarddesigner.com, www.wood-database.com, www.instructables.com, www.lumberjocks.com, www.thecraftycatsman.com, www.titebond.com, www.finewoodworking.com, www.thisoldhouse.com, www.wwgoa.com, www.fsis.usda.gov.
-2. **Wood Vault permission.** Email them about listing their products (see section 6).
+2. **Cutting board packs.** Confirm how many strips of what width each pack contains.
 3. **Competitors to try by hand.** cuttingboarddesigner.com and Cutting Board Studio, once reachable.
 4. **Remaining tip sources.** Glue figures, finishing and care advice need their pages read in full.
 5. **Tumbling blocks.** Confirm the build sequence against a published guide.
