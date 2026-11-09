@@ -23,6 +23,12 @@ export interface Panel {
   thickness: number;
   /** Length along the grain. Determines how many slices the panel yields. */
   length: number;
+  /**
+   * Blade tilt from vertical, in degrees, when the strips are ripped with slanted sides.
+   * Strip widths are then measured along the face of the panel, and the two outer strips
+   * keep one square edge so the panel is still a rectangle.
+   */
+  bevel?: number;
 }
 
 export interface Cut {
@@ -44,6 +50,10 @@ export interface SliceSpec {
   shift?: number;
   /** Re-rip the piece to this y size, narrower than the panel thickness. */
   ripTo?: number;
+  /** Turn the piece a quarter turn on the bench, so its strips run across the board. */
+  turn?: boolean;
+  /** Turn the piece upside down. This mirrors the slant of bevelled strips, making a zigzag. */
+  over?: boolean;
 }
 
 export interface Recipe {
@@ -54,7 +64,14 @@ export interface Recipe {
   flattenPerFace: number;
   /** Extra length cut from each end of the board after glue-up, beyond squaring shifted slices. */
   trimEnds?: number;
+  /**
+   * How many pieces sit side by side in each row. Defaults to 1: every slice is a full row.
+   * With more, the slices are laid out as a grid of tiles, row by row.
+   */
+  columns?: number;
 }
+
+export type Point = [x: number, y: number];
 
 /** A rectangle of one species on the finished board's surface. */
 export interface Cell {
@@ -65,6 +82,28 @@ export interface Cell {
   species: string;
   /** Index into `Recipe.slices`. */
   slice: number;
+  /**
+   * The outline, when the cell is not a rectangle (strips ripped with a tilted blade).
+   * `x`, `y`, `width` and `height` then give its bounding box.
+   */
+  points?: Point[];
+}
+
+/** A slice in position on the bench, before the board is trimmed. */
+export interface Piece {
+  /** Index into `Recipe.slices`. */
+  slice: number;
+  row: number;
+  column: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  flipped: boolean;
+  turned: boolean;
+  over: boolean;
+  /** The strips of the piece, positioned on the bench. */
+  cells: Cell[];
 }
 
 export interface PanelReport {

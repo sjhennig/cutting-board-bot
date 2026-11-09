@@ -1,7 +1,14 @@
-import type { BoardResult, Cell, Panel, PanelReport, Recipe, SliceSpec } from './types';
+import { boundingBox, clipToRange } from './geometry';
+import type { BoardResult, Cell, Panel, PanelReport, Piece, Point, Recipe, SliceSpec } from './types';
 import { EPS } from './units';
 
-export const panelWidth = (panel: Panel): number => panel.strips.reduce((sum, strip) => sum + strip.width, 0);
+/** How far the slanted side of a bevelled strip leans over the panel's thickness. */
+export const bevelOffset = (panel: Panel): number =>
+  panel.bevel ? panel.thickness * Math.tan((panel.bevel * Math.PI) / 180) : 0;
+
+/** Width of the glued panel. A bevelled panel loses one lean, shared between its two square-edged outer strips. */
+export const panelWidth = (panel: Panel): number =>
+  panel.strips.reduce((sum, strip) => sum + strip.width, 0) - bevelOffset(panel);
 
 /**
  * How many slices of `sliceThickness` a panel of `length` yields.
@@ -38,57 +45,128 @@ export function packWidths(widths: number[], binWidth: number, kerf: number): nu
 
 const sliceHeight = (slice: SliceSpec, panel: Panel): number => slice.ripTo ?? panel.thickness;
 
+/**
+ * Put every slice in its place on the bench, end grain up, before anything is trimmed.
+ * Slices fill rows of `recipe.columns` pieces; with one column each slice is a full row.
+ */
+export function layoutPieces(recipe: Recipe): Piece[] {
+  const panelsById = new Map(recipe.panels.map((panel) => [panel.id, panel]));
+  const columns = recipe.columns ?? 1;
+  const pieces: Piece[] = [];
+  let rowTop = 0;
+  let rowHeight = 0;
+  let x = 0;
+
+  recipe.slices.forEach((slice, index) => {
+    const panel = panelsById.get(slice.panel) as Panel;
+    const column = index % columns;
+    if (column === 0) {
+      rowTop += rowHeight;
+      rowHeight = 0;
+      x = 0;
+    }
+    const along = panelWidth(panel);
+    const across = sliceHeight(slice, panel);
+    const turned = slice.turn === true;
+    const width = turned ? across : along;
+    const height = turned ? along : across;
+    if (column > 0 && Math.abs(height - rowHeight) > EPS) {
+      throw new Error('Pieces that sit side by side in a row must be the same height.');
+    }
+    rowHeight = height;
+
+    const left = x + (slice.shift ?? 0);
+    const strips = slice.flip && !panel.bevel ? [...panel.strips].reverse() : panel.strips;
+    const lean = bevelOffset(panel);
+    let offset = 0;
+    const cells: Cell[] = [];
+    for (const strip of strips) {
+      const start = offset;
+      offset += strip.width;
+      if (!panel.bevel) {
+        cells.push(
+          turned
+            ? { x: left, y: rowTop + start, width: across, height: strip.width, species: strip.species, slice: index }
+            : { x: left + start, y: rowTop, width: strip.width, height: across, species: strip.species, slice: index },
+        );
+        continue;
+      }
+      // A slanted strip, seen on the end grain: a parallelogram, cut square at the panel's edges.
+      let points: Point[] = clipToRange(
+        [
+          [start - lean, 0],
+          [start + strip.width - lean, 0],
+          [start + strip.width, across],
+          [start, across],
+        ],
+        0,
+        along,
+      );
+      if (points.length < 3) continue;
+      // End for end is a half turn on the bench; turning over mirrors the slant.
+      if (slice.flip) points = points.map(([px, py]) => [along - px, across - py]);
+      if (slice.over) points = points.map(([px, py]) => [px, across - py]);
+      points = points.map(([px, py]) => [px + left, py + rowTop]);
+      cells.push({ ...boundingBox(points), species: strip.species, slice: index, points });
+    }
+
+    pieces.push({
+      slice: index,
+      row: Math.floor(index / columns),
+      column,
+      x: left,
+      y: rowTop,
+      width,
+      height,
+      flipped: slice.flip === true,
+      turned,
+      over: slice.over === true,
+      cells,
+    });
+    x += width;
+  });
+  return pieces;
+}
+
 /** Work out the finished board, the panel requirements and the waste for a recipe. */
 export function buildBoard(recipe: Recipe): BoardResult {
   const { cut, slices, flattenPerFace } = recipe;
   const trimEnds = recipe.trimEnds ?? 0;
   validate(recipe);
 
-  const panelsById = new Map(recipe.panels.map((panel) => [panel.id, panel]));
-  const panelOf = (slice: SliceSpec): Panel => panelsById.get(slice.panel) as Panel;
+  const pieces = layoutPieces(recipe);
+  const rowCount = (pieces[pieces.length - 1]?.row ?? 0) + 1;
+  const rows = Array.from({ length: rowCount }, (_, row) => pieces.filter((piece) => piece.row === row));
 
-  // The board spans only the x range that every slice covers; the rest is trimmed off.
-  const left = Math.max(...slices.map((slice) => slice.shift ?? 0)) + trimEnds;
-  const right = Math.min(...slices.map((slice) => (slice.shift ?? 0) + panelWidth(panelOf(slice)))) - trimEnds;
+  // The board spans only the x range that every row covers; the rest is trimmed off.
+  const left = Math.max(...rows.map((row) => row[0]!.x)) + trimEnds;
+  const right = Math.min(...rows.map((row) => row[row.length - 1]!.x + row[row.length - 1]!.width)) - trimEnds;
   if (right - left <= EPS) {
     throw new Error('The slices are shifted or trimmed so far that nothing is left of the board.');
   }
   const length = right - left;
+  const width = rows.reduce((sum, row) => sum + row[0]!.height, 0);
 
   const cells: Cell[] = [];
-  let y = 0;
-  slices.forEach((slice, index) => {
-    const panel = panelOf(slice);
-    const height = sliceHeight(slice, panel);
-    const strips = slice.flip ? [...panel.strips].reverse() : panel.strips;
-    let x = slice.shift ?? 0;
-    for (const strip of strips) {
-      const start = Math.max(x, left);
-      const end = Math.min(x + strip.width, right);
-      if (end - start > EPS) {
-        cells.push({
-          x: start - left,
-          y,
-          width: end - start,
-          height,
-          species: strip.species,
-          slice: index,
-        });
-      }
-      x += strip.width;
+  for (const cell of pieces.flatMap((piece) => piece.cells)) {
+    if (cell.points) {
+      const points = clipToRange(cell.points, left, right).map(([px, py]): Point => [px - left, py]);
+      if (points.length >= 3) cells.push({ ...cell, ...boundingBox(points), points });
+      continue;
     }
-    y += height;
-  });
-  const width = y;
-  const thickness = cut.sliceThickness - 2 * flattenPerFace;
+    const start = Math.max(cell.x, left);
+    const end = Math.min(cell.x + cell.width, right);
+    if (end - start > EPS) cells.push({ ...cell, x: start - left, width: end - start });
+  }
 
   const panels = recipe.panels.map((panel) => reportPanel(panel, recipe));
+  const panelsById = new Map(recipe.panels.map((panel) => [panel.id, panel]));
 
   // Follow the wood through each step so that every cubic millimetre is accounted for.
   const t = cut.sliceThickness;
   const waste = {
     supplied: 0,
-    board: length * width * thickness,
+    board: 0,
     endTrim: 0,
     crosscutKerf: 0,
     panelLeftover: 0,
@@ -110,9 +188,15 @@ export function buildBoard(recipe: Recipe): BoardResult {
     waste.crosscutKerf += section * kerfLength;
     waste.panelLeftover += section * (afterTrim - cutCount * t - kerfLength);
     waste.reRip += (cutCount * panel.thickness - placedArea) * report.width * t;
-    waste.boardTrim += (report.width - length) * placedArea * t;
   });
+  const placedVolume = slices.reduce((sum, slice) => {
+    const panel = panelsById.get(slice.panel) as Panel;
+    return sum + panelWidth(panel) * sliceHeight(slice, panel) * t;
+  }, 0);
+  waste.boardTrim = placedVolume - length * width * t;
 
+  const thickness = t - 2 * flattenPerFace;
+  waste.board = length * width * thickness;
   return { length, width, thickness, cells, panels, waste };
 }
 
@@ -167,6 +251,12 @@ function validate(recipe: Recipe): void {
     throw new Error('Flattening would remove the whole board. Use thicker slices.');
   }
 
+  const columns = recipe.columns ?? 1;
+  if (!Number.isInteger(columns) || columns < 1) throw new Error('Columns must be a whole number of 1 or more.');
+  if (columns > 1 && slices.length % columns !== 0) {
+    throw new Error('The last row of tiles is incomplete.');
+  }
+
   const ids = new Set<string>();
   for (const panel of panels) {
     if (ids.has(panel.id)) throw new Error(`Two panels are both called "${panel.id}".`);
@@ -174,6 +264,16 @@ function validate(recipe: Recipe): void {
     if (panel.strips.length === 0) throw new Error(`Panel "${panel.id}" has no strips.`);
     if (panel.thickness <= 0 || panel.length <= 0) {
       throw new Error(`Panel "${panel.id}" needs a thickness and length greater than zero.`);
+    }
+    if (panel.bevel !== undefined) {
+      if (!(panel.bevel > 0 && panel.bevel < 60)) {
+        throw new Error(`Panel "${panel.id}" needs a blade tilt between 0 and 60 degrees.`);
+      }
+      if (panel.strips.some((strip) => strip.width <= bevelOffset(panel))) {
+        throw new Error(
+          `The strips in panel "${panel.id}" are too narrow for this blade tilt and thickness. Use wider strips, thinner stock or less tilt.`,
+        );
+      }
     }
     if (panel.strips.some((strip) => strip.width <= 0)) {
       throw new Error(`Every strip in panel "${panel.id}" needs a width greater than zero.`);
@@ -184,6 +284,11 @@ function validate(recipe: Recipe): void {
   slices.forEach((slice, index) => {
     const panel = byId.get(slice.panel);
     if (!panel) throw new Error(`Slice ${index + 1} refers to a panel "${slice.panel}" that does not exist.`);
+    if (panel.bevel !== undefined && (slice.ripTo !== undefined || slice.turn)) {
+      throw new Error(
+        `Slice ${index + 1} is cut from a bevelled panel, so it cannot be re-ripped or turned a quarter turn.`,
+      );
+    }
     if (slice.ripTo !== undefined && (slice.ripTo <= 0 || slice.ripTo > panel.thickness + EPS)) {
       throw new Error(
         `Slice ${index + 1} cannot be ripped to ${slice.ripTo} mm: panel "${panel.id}" is only ${panel.thickness} mm thick.`,

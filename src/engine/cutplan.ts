@@ -1,3 +1,4 @@
+import { bevelOffset } from './board';
 import type { Recipe } from './types';
 import { EPS } from './units';
 
@@ -21,6 +22,8 @@ export interface StripNeed {
   thickness: number;
   /** Panel length. */
   length: number;
+  /** Blade tilt from vertical, in degrees, when the strip has slanted sides. */
+  bevel?: number;
 }
 
 export interface PlannedStrip extends StripNeed {
@@ -72,6 +75,7 @@ export function stripNeeds(recipe: Recipe): StripNeed[] {
       width: strip.width,
       thickness: panel.thickness,
       length: panel.length,
+      ...(panel.bevel ? { bevel: panel.bevel } : {}),
     })),
   );
 }
@@ -81,6 +85,8 @@ interface OpenSegment {
   stock: StockBoard;
   segment: PlannedSegment;
   remainingWidth: number;
+  /** Blade tilt the segment is being ripped at; 0 for square cuts. */
+  bevel: number;
 }
 
 interface Fit {
@@ -89,9 +95,25 @@ interface Fit {
   planeTo?: number;
 }
 
+/** How far a slanted strip leans over its thickness. */
+const leanOf = (need: StripNeed): number =>
+  bevelOffset({ id: need.panel, strips: [], thickness: need.thickness, length: need.length, bevel: need.bevel });
+
+/** A tilted blade removes a wider strip of the board's face than a square one. */
+const kerfFor = (need: StripNeed, kerf: number): number =>
+  need.bevel ? kerf / Math.cos((need.bevel * Math.PI) / 180) : kerf;
+
 /** How a strip could be cut from a stock board, or null if it cannot. */
 function fitStrip(need: StripNeed, stock: StockBoard): Fit | null {
   if (stock.species !== need.species || stock.length < need.length - EPS) return null;
+
+  if (need.bevel) {
+    // Slanted strips lie flat, and the first cut on each board wastes one lean of width.
+    if (stock.thickness < need.thickness - EPS || stock.width < need.width + leanOf(need) - EPS) return null;
+    const fit: Fit = { ripWidth: need.width, orientation: 'flat' };
+    if (stock.thickness > need.thickness + EPS) fit.planeTo = need.thickness;
+    return fit;
+  }
 
   const fits: Fit[] = [];
   if (stock.thickness >= need.thickness - EPS) {
@@ -143,7 +165,7 @@ export function planStrips(allNeeds: StripNeed[], stock: StockBoard[], kerf: num
   for (const need of needs) {
     const place = (target: OpenSegment, fit: Fit): void => {
       target.segment.strips.push({ ...need, ...fit });
-      target.remainingWidth -= fit.ripWidth + kerf;
+      target.remainingWidth -= fit.ripWidth + kerfFor(need, kerf);
       target.segment.leftoverWidth = Math.max(0, target.remainingWidth);
     };
 
@@ -152,7 +174,8 @@ export function planStrips(allNeeds: StripNeed[], stock: StockBoard[], kerf: num
     for (const target of open) {
       const fit = fitStrip(need, target.stock);
       const sameLength = Math.abs(target.segment.length - need.length) <= EPS;
-      if (fit && sameLength && target.remainingWidth >= fit.ripWidth - EPS) {
+      const sameTilt = target.bevel === (need.bevel ?? 0);
+      if (fit && sameLength && sameTilt && target.remainingWidth >= fit.ripWidth - EPS) {
         place(target, fit);
         placed = true;
         break;
@@ -168,7 +191,13 @@ export function planStrips(allNeeds: StripNeed[], stock: StockBoard[], kerf: num
       const segment: PlannedSegment = { length: need.length, strips: [], leftoverWidth: item.width };
       board.segments.push(segment);
       board.leftoverLength = Math.max(0, board.leftoverLength - need.length - kerf);
-      const target = { board, stock: item, segment, remainingWidth: item.width };
+      const target: OpenSegment = {
+        board,
+        stock: item,
+        segment,
+        remainingWidth: item.width - (need.bevel ? leanOf(need) : 0),
+        bevel: need.bevel ?? 0,
+      };
       open.push(target);
       place(target, fit);
       placed = true;
@@ -194,6 +223,8 @@ export interface RipLine {
   count: number;
   orientation: 'flat' | 'onEdge';
   planeTo?: number;
+  /** Blade tilt from vertical, in degrees. */
+  bevel?: number;
 }
 
 /** The rip cuts in a plan, with identical cuts grouped so the fence is set once for each. */
@@ -207,6 +238,7 @@ export function ripList(plan: CutPlan): RipLine[] {
             entry.species === strip.species &&
             entry.orientation === strip.orientation &&
             entry.planeTo === strip.planeTo &&
+            entry.bevel === strip.bevel &&
             Math.abs(entry.ripWidth - strip.ripWidth) <= EPS &&
             Math.abs(entry.length - segment.length) <= EPS,
         );
@@ -218,6 +250,7 @@ export function ripList(plan: CutPlan): RipLine[] {
             length: segment.length,
             count: 1,
             orientation: strip.orientation,
+            ...(strip.bevel !== undefined ? { bevel: strip.bevel } : {}),
             ...(strip.planeTo !== undefined ? { planeTo: strip.planeTo } : {}),
           });
         }

@@ -213,3 +213,69 @@ export function illusion3d(options: {
     trimEnds: edgeExtra,
   });
 }
+
+/**
+ * Basket weave. Square tiles, each made of a few strips, laid in a grid with every other
+ * tile turned a quarter turn. The tiles are slices of one square-section log, so the
+ * strips together must be exactly as wide as the stock is thick.
+ */
+export function basketWeave(options: {
+  /** The outer wood of each tile, then the inner wood. */
+  species: string[];
+  columns: number;
+  rows: number;
+  /** How many strips make one tile. */
+  stripsPerTile?: number;
+  shop?: Shop;
+}): Recipe {
+  const { species, columns, rows } = options;
+  const stripsPerTile = options.stripsPerTile ?? 3;
+  requireSpecies(species, 2, 'basket weave');
+  requireCount(columns, 'Columns');
+  requireCount(rows, 'Rows');
+  if (!Number.isInteger(stripsPerTile) || stripsPerTile < 2) {
+    throw new Error('A basket weave tile needs at least 2 strips.');
+  }
+  const shop = options.shop ?? defaultShop;
+
+  const tile = shop.panelThickness;
+  const strips = times(stripsPerTile, (index) => ({
+    species: (index === 0 || index === stripsPerTile - 1 ? species[0] : species[1]) as string,
+    width: tile / stripsPerTile,
+  }));
+  const slices = times(columns * rows, (index) => {
+    const row = Math.floor(index / columns);
+    return (row + (index % columns)) % 2 === 1 ? { turn: true } : {};
+  });
+  return { ...singlePanelRecipe(strips, slices, shop), columns };
+}
+
+/**
+ * Chevron. Strips are ripped with a tilted blade, so on the end grain each one shows as a
+ * slanted band. Every other slice is turned upside down, which mirrors the slant and
+ * makes a zigzag. The two outer strips keep one square edge, so nothing is trimmed.
+ */
+export function chevron(options: {
+  species: string[];
+  columns: number;
+  rows: number;
+  /** Strip width, measured along the face of the board. */
+  stripWidth: number;
+  /** Blade tilt from vertical, in degrees. */
+  bevel?: number;
+  shop?: Shop;
+}): Recipe {
+  const { species, columns, rows, stripWidth } = options;
+  requireSpecies(species, 2, 'chevron');
+  requireCount(columns, 'Columns');
+  requireCount(rows, 'Rows');
+  const shop = options.shop ?? defaultShop;
+
+  const strips = times(columns, (index) => ({ species: cycle(species, index), width: stripWidth }));
+  const slices = times(rows, (row) => (row % 2 === 0 ? {} : { over: true }));
+  const recipe = singlePanelRecipe(strips, slices, shop);
+  return sizePanels({
+    ...recipe,
+    panels: recipe.panels.map((panel) => ({ ...panel, bevel: options.bevel ?? 30 })),
+  });
+}
