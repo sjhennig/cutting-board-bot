@@ -215,7 +215,8 @@ export const defaultState: DesignState = {
   unit: 'in',
   kerf: inch(1 / 8),
   canPlane: false,
-  woodMode: 'buy',
+  // People design around the boards they have. The catalog is a reference, not a limit.
+  woodMode: 'have',
   buySpecies: ['hard-maple', 'black-walnut'],
   stock: [],
   excluded: [],
@@ -269,7 +270,9 @@ export function makeRecipe(state: DesignState): {
   if (species.length < info.minSpecies) {
     throw new Error(
       species.length === 0
-        ? 'Choose at least one wood to see your board.'
+        ? state.woodMode === 'have'
+          ? 'Add the boards you have, in the "Your wood" step, to see your board.'
+          : 'Choose at least one wood to see your board.'
         : `A ${info.name.replace(/^[A-Z](?=[a-z])/, (letter) => letter.toLowerCase())} board needs at least ${info.minSpecies} woods. Add another wood, or pick a different pattern.`,
     );
   }

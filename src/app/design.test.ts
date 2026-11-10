@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { inch, type StockBoard } from '../engine';
-import { PATTERNS, biggestBoard, defaultState, makeDesign, suggestedStripThickness, type DesignState } from './design';
+import {
+  PATTERNS,
+  biggestBoard,
+  defaultState as appDefault,
+  makeDesign,
+  suggestedStripThickness,
+  type DesignState,
+} from './design';
+
+// Most of these tests are about the shopping list, so they start from "suggest what to buy".
+const defaultState: DesignState = { ...appDefault, woodMode: 'buy' };
 
 const own = (species: string, thickness: number, quantity: number): StockBoard => ({
   id: `${species}-${thickness}`,
@@ -296,6 +306,37 @@ describe('makeDesign', () => {
     it('has nothing to offer when the wood cannot make the pattern, or is being bought', () => {
       expect(biggestBoard({ ...state, stock: [own('hard-maple', 1.5, 2)] })).toBeNull();
       expect(biggestBoard(defaultState)).toBeNull();
+    });
+  });
+
+  describe('a first-time visitor', () => {
+    it('starts with their own boards, and is asked to add them', () => {
+      expect(appDefault.woodMode).toBe('have');
+      expect(appDefault.stock).toEqual([]);
+      expect(() => makeDesign(appDefault)).toThrow(/Add the boards you have/);
+    });
+
+    it('can use boards of any size, not only catalog sizes', () => {
+      // Offcuts measured in the shop: no catalog sells these.
+      const odd = (species: string, id: string): StockBoard => ({
+        id,
+        species,
+        thickness: inch(1.4375),
+        width: inch(6.8125),
+        length: inch(31.5),
+        quantity: 1,
+      });
+      const design = makeDesign({
+        ...appDefault,
+        stock: [odd('hard-maple', 'a'), odd('black-walnut', 'b')],
+        stripThickness: inch(1.4375),
+        cellWidth: inch(1.4375),
+        boardLength: inch(11.5),
+        boardWidth: inch(10),
+      });
+      expect(design.plan.shortfalls).toEqual([]);
+      expect(design.notices.filter((notice) => notice.level === 'problem')).toEqual([]);
+      expect(design.board.length).toBeCloseTo(inch(11.5), 6);
     });
   });
 });

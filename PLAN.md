@@ -223,15 +223,15 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 
 ### Completed
 
-| Area                | What exists                                                                                                                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Geometry engine     | Recipe model, finished size, surface layout, slice counts, which pieces to rip from each slice, full waste breakdown, cut planner, purchase planner, design checks (`src/engine`)        |
-| Patterns in the app | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron, plaid, framed (intermediate); tumbling blocks and MTM Wood's 3D illusion board (advanced)                       |
-| Designer            | Five steps: shop, wood, pattern, size, cut list. Buy from the Wood Vault catalog or enter your own boards. Design remembered in the browser, and shareable as a link                     |
-| Outputs             | Cut list in build order; optional full instructions with diagrams, numbered steps, sanding, oiling and care; print layout for both. Both handle designs with more than one kind of panel |
-| Tips                | Twenty-four, each citing a source read in full on 9 or 10 November 2026; disagreements between sources are shown                                                                         |
-| Data                | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                                                   |
-| Project hygiene     | 175 unit tests and 18 end-to-end browser tests; formatting, type, unit and browser checks on every push; automatic publishing of `main` to GitHub Pages once switched on                 |
+| Area                | What exists                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Geometry engine     | Recipe model, finished size, surface layout, slice counts, which pieces to rip from each slice, full waste breakdown, cut planner, purchase planner, design checks (`src/engine`)                                   |
+| Patterns in the app | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron, plaid, framed (intermediate); tumbling blocks and MTM Wood's 3D illusion board (advanced)                                                  |
+| Designer            | Five steps: shop, wood, pattern, size, cut list. Enter your own boards at their real sizes (the default), or ask for a shopping list in Wood Vault sizes. Design remembered in the browser, and shareable as a link |
+| Outputs             | Cut list in build order; optional full instructions with diagrams, numbered steps, sanding, oiling and care; print layout for both. Both handle designs with more than one kind of panel                            |
+| Tips                | Twenty-four, each citing a source read in full on 9 or 10 November 2026; disagreements between sources are shown                                                                                                    |
+| Data                | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                                                                              |
+| Project hygiene     | 178 unit tests and 19 end-to-end browser tests; formatting, type, unit and browser checks on every push; `main` is published automatically to GitHub Pages                                                          |
 
 ### What the second session changed
 
@@ -245,13 +245,13 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 - **"Make the biggest board my wood allows"** on the size step, for people working from boards they already have.
 - **A tighter print layout:** smaller type, pictures and margins on paper only.
 - **Tumbling blocks.** A small engine of its own (`src/engine/tumbling.ts`) lays out the honeycomb and reports the logs as a recipe, so the cut planner, shopping list and cut list screen are reused. The method was checked against two published builds, which changed the plan (section 3). Four tips from those builds were added; they were read on 10 November 2026.
+- **Intake changed after the first real use (the owner's).** The designer now starts from "I have boards": the user enters each board at its measured size, in any wood. The Wood Vault catalog is a reference only: it fills in common sizes on request, and it drives the optional "Suggest what to buy" shopping list. A button on the shopping list copies it into the user's own boards so the sizes can be corrected when the wood arrives.
 - **A purchase planner bug was fixed.** When one board size was the best choice for several strip widths, the cut plan listed those boards several times over and bought one board per width. The first end-to-end test of the 3D board exposed it. No earlier pattern triggered it, because each needed one strip width per wood.
 
 ### Outstanding
 
 **Needs a person**
 
-- Switch on GitHub Pages: Settings, Pages, Source, "GitHub Actions". The site is not live until this is done.
 - Try the designer as a real user and note what is confusing. Nobody but the author has used it yet.
 - Confirm what a Wood Vault cutting board pack contains (how many strips, how wide), so packs can join the catalog.
 - Read the USDA cutting board page by hand if bleach-sanitising advice is wanted in the care card.
@@ -283,6 +283,6 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 
 ### Recommended next session
 
-1. **Get real-user feedback.** Ten patterns now work end to end and nobody but the author has used them. Switch on GitHub Pages and try it.
+1. **Get real-user feedback.** Ten patterns now work end to end and nobody but the author has used them. It is live on GitHub Pages; the first round of feedback changed the intake.
 2. Pixel art, the last pattern in section 4 not yet built.
 3. Find a tumbling blocks guide that publishes its dimensions (section 10, item 5).

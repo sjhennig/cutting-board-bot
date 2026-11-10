@@ -113,20 +113,14 @@ const sortedCatalogSpecies = [...catalogSpecies].sort(
 export function WoodStep({ state, update }: StepProps) {
   return (
     <>
-      <h2>Choose your wood</h2>
+      <h2>Your wood</h2>
+      <p className="lead">
+        Design around the boards you really have, at the sizes you measure. If you have not bought wood yet, the
+        designer can suggest a shopping list instead.
+      </p>
       <fieldset>
         <legend>Where is the wood coming from?</legend>
         <div className="choices">
-          <label className={state.woodMode === 'buy' ? 'choice selected' : 'choice'}>
-            <input
-              type="radio"
-              name="mode"
-              checked={state.woodMode === 'buy'}
-              onChange={() => update({ woodMode: 'buy' })}
-            />
-            <span className="title">I need to buy wood</span>
-            <span className="detail">Pick your woods and get a shopping list from {WOOD_VAULT.name}.</span>
-          </label>
           <label className={state.woodMode === 'have' ? 'choice selected' : 'choice'}>
             <input
               type="radio"
@@ -134,8 +128,18 @@ export function WoodStep({ state, update }: StepProps) {
               checked={state.woodMode === 'have'}
               onChange={() => update({ woodMode: 'have' })}
             />
-            <span className="title">I already have boards</span>
-            <span className="detail">Enter what you have and design around it.</span>
+            <span className="title">I have boards</span>
+            <span className="detail">Enter each board at its real size. Any wood, from any supplier.</span>
+          </label>
+          <label className={state.woodMode === 'buy' ? 'choice selected' : 'choice'}>
+            <input
+              type="radio"
+              name="mode"
+              checked={state.woodMode === 'buy'}
+              onChange={() => update({ woodMode: 'buy' })}
+            />
+            <span className="title">Suggest what to buy</span>
+            <span className="detail">Pick your woods and get a shopping list in {WOOD_VAULT.name}'s sizes.</span>
           </label>
         </div>
       </fieldset>
@@ -156,6 +160,10 @@ function BuyWood({ state, update }: StepProps) {
   return (
     <fieldset>
       <legend>Which woods would you like?</legend>
+      <p className="help">
+        The shopping list uses the board sizes {WOOD_VAULT.name} sells, as a reference. If your supplier's boards are
+        different, or once your boards arrive, choose "I have boards" above and enter their real sizes.
+      </p>
       <p className="help">
         Choose two contrasting woods for most patterns. Hard, tight-grained woods make the best cutting boards.
       </p>
@@ -200,7 +208,7 @@ function OwnWood({ state, update }: StepProps) {
     <fieldset>
       <legend>Your boards</legend>
       {state.stock.length === 0 ? (
-        <p className="empty">No boards yet. Add your first one below.</p>
+        <p className="empty">No boards yet. Add your first one below, then the next. Most patterns need two woods.</p>
       ) : (
         <table className="stock">
           <thead>
@@ -252,7 +260,10 @@ function OwnWood({ state, update }: StepProps) {
 
       <div className="add-board">
         <h3>Add a board</h3>
-        <p className="help">Measure the board itself. Listed sizes are often a little off.</p>
+        <p className="help">
+          Measure the board itself and enter what you find: thickness, width and length. Listed sizes are often a little
+          off, and offcuts are whatever they are.
+        </p>
         <div className="row">
           <div className="field">
             <label htmlFor="add-species">Wood</label>
@@ -272,7 +283,7 @@ function OwnWood({ state, update }: StepProps) {
           </div>
           {sizes.length > 0 && (
             <div className="field">
-              <label htmlFor="add-size">Fill in a {WOOD_VAULT.name} size</label>
+              <label htmlFor="add-size">Start from a common size (optional)</label>
               <select
                 id="add-size"
                 value=""
@@ -282,7 +293,7 @@ function OwnWood({ state, update }: StepProps) {
                     setDraft({ ...draft, thickness: board.thickness, width: board.width, length: board.length });
                 }}
               >
-                <option value="">Choose a size…</option>
+                <option value="">{WOOD_VAULT.name} sizes, for reference…</option>
                 {sizes.map((size) => (
                   <option key={size.id} value={size.id}>
                     {show(size.thickness)} × {show(size.width)} × {show(size.listedLength)}

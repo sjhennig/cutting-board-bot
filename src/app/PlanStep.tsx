@@ -219,9 +219,33 @@ export function PlanStep({
               </tbody>
             </table>
             <p className="help">
-              Sizes are from <a href={WOOD_VAULT.url}>{WOOD_VAULT.name}</a>. Boards often arrive up to 1/4 in. shorter
-              than listed; this plan allows for that. Consider adding one spare of each wood in case a board has a flaw.
+              Sizes are from <a href={WOOD_VAULT.url}>{WOOD_VAULT.name}</a>, as a reference. Boards often arrive up to
+              1/4 in. shorter than listed; this plan allows for that. Consider adding one spare of each wood in case a
+              board has a flaw.
             </p>
+            <div className="presets own-sizes">
+              <button
+                type="button"
+                className="chip"
+                onClick={() =>
+                  update({
+                    woodMode: 'have',
+                    excluded: [],
+                    stock: purchase.map((line, index) => ({
+                      id: `own-${Date.now()}-${index}`,
+                      species: line.board.species,
+                      thickness: line.board.thickness,
+                      width: line.board.width,
+                      length: line.board.length,
+                      quantity: line.quantity,
+                    })),
+                  })
+                }
+              >
+                My boards are a different size
+              </button>
+              <span>Copies this list to the Your wood step, where you can enter what you measure.</span>
+            </div>
           </>
         ) : (
           <p className="help">The table in the next step shows which of your boards are used.</p>
