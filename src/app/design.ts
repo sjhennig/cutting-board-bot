@@ -8,9 +8,11 @@ import {
   checkDesign,
   checkerboard,
   chevron,
+  framed,
   illusion3d,
   inch,
   MTM_3D_STEPS,
+  plaid,
   planCuts,
   ripList,
   stripes,
@@ -26,7 +28,8 @@ import {
   type Unit,
 } from '../engine';
 
-export type PatternId = 'checkerboard' | 'brick' | 'stripes' | 'chaotic' | 'basketweave' | 'chevron' | 'illusion3d';
+export type PatternId =
+  'checkerboard' | 'brick' | 'stripes' | 'chaotic' | 'basketweave' | 'chevron' | 'plaid' | 'framed' | 'illusion3d';
 
 export interface PatternInfo {
   id: PatternId;
@@ -110,6 +113,26 @@ export const PATTERNS: PatternInfo[] = [
     arrange: 'Turn every second slice upside down. This mirrors its slant, so the bands zigzag and meet at each joint.',
   },
   {
+    id: 'plaid',
+    name: 'Plaid',
+    blurb: 'Squares divided by thin lines running both ways. A third wood shows where the lines cross.',
+    level: 'Intermediate',
+    minSpecies: 2,
+    cellLabel: 'Square width',
+    arrange:
+      'Lay the slices from panel A in a row, with one thin piece from panel B between each pair. Slide the thin pieces until their lines meet the lines of the slices on either side.',
+  },
+  {
+    id: 'framed',
+    name: 'Framed',
+    blurb: 'A centre field with a border of your last wood. The border is end grain too, so it moves with the board.',
+    level: 'Intermediate',
+    minSpecies: 2,
+    cellLabel: 'Block width',
+    arrange:
+      'Put one border piece from panel B first and one last, with the slices from panel A between them. If the centre is a checkerboard, turn every second slice from panel A end for end.',
+  },
+  {
     id: 'illusion3d',
     name: '3D illusion',
     blurb: 'Rectangles that shrink towards the centre, so the flat board seems to bulge. Many thin, precise pieces.',
@@ -123,6 +146,9 @@ export const PATTERNS: PatternInfo[] = [
       'Lay the pieces out in the order shown, taking them from panel A and panel B in turn: widest at the two edges, narrowest in the centre. Every piece sits the same way round.',
   },
 ];
+
+/** Width of the thin lines of a plaid. */
+export const PLAID_LINE = inch(1 / 4);
 
 /** Blade tilt for chevron strips, in degrees from vertical. */
 export const CHEVRON_TILT = 30;
@@ -281,6 +307,23 @@ export function makeRecipe(state: DesignState): { recipe: Recipe; columns: numbe
         rows,
       };
     }
+    case 'plaid': {
+      const columns = count(state.boardLength + PLAID_LINE, cell + PLAID_LINE);
+      const deep = count(state.boardWidth + PLAID_LINE, state.stripThickness + PLAID_LINE);
+      return {
+        recipe: plaid({ species, columns, rows: deep, cellWidth: cell, lineWidth: PLAID_LINE, shop }),
+        columns,
+        rows: deep,
+      };
+    }
+    case 'framed': {
+      // The border is as wide as a block, or as the strips are thick if that is less.
+      const borderWidth = Math.min(cell, state.stripThickness);
+      const columns = count(state.boardLength - 2 * borderWidth, cell);
+      const deep = count(state.boardWidth - 2 * borderWidth, state.stripThickness);
+      const recipe = framed({ species, columns, rows: deep, cellWidth: cell, borderWidth, shop });
+      return { recipe, columns: (recipe.panels[0]?.strips.length ?? 2) - 2, rows: deep };
+    }
     case 'illusion3d': {
       // MTM Wood's widths, scaled to the size asked for and rounded to marks on a ruler.
       const grid = state.unit === 'in' ? inch(1 / 32) : 0.5;
@@ -369,12 +412,14 @@ export function makeDesign(state: DesignState): Design {
 
   for (const warning of checkDesign(recipe, board)) notices.push(warning);
 
-  if (state.pattern === 'chevron') {
+  if (state.pattern === 'chevron' || state.pattern === 'plaid' || state.pattern === 'framed') {
     notices.push({
       level: 'caution',
       message:
         'The steps for this pattern are worked out from its geometry, not taken from a published build guide. ' +
-        'Rip a short test piece first to check your blade tilt and fence setting.',
+        (state.pattern === 'chevron'
+          ? 'Rip a short test piece first to check your blade tilt and fence setting.'
+          : 'Make a test cut on an offcut before each new fence setting.'),
     });
   }
   if (state.pattern === 'basketweave') {

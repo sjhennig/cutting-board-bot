@@ -96,6 +96,33 @@ describe('makeDesign', () => {
     });
   });
 
+  it('builds a plaid from blanks for the squares and ripped strips for the lines', () => {
+    const design = makeDesign({ ...defaultState, pattern: 'plaid' });
+    // 15 by 13 in.: ten 1-1/4 in. squares and nine 1/4 in. lines; seven 1-5/8 in. rows and six lines.
+    expect([design.columns, design.rows]).toEqual([10, 7]);
+    expect(design.board.length).toBeCloseTo(inch(10 * 1.25 + 9 * 0.25), 6);
+    expect(design.board.width).toBeCloseTo(inch(7 * 1.625 + 6 * 0.25), 6);
+    expect(design.recipe.panels).toHaveLength(2);
+    expect(design.notices.every((notice) => notice.level === 'caution')).toBe(true);
+  });
+
+  it('builds a framed board: a plain centre with two woods, a checkerboard with three', () => {
+    const two = makeDesign({ ...defaultState, pattern: 'framed' });
+    expect(two.board.length).toBeCloseTo(inch(15), 6);
+    expect(two.board.cells[0]!.species).toBe('black-walnut');
+    expect(two.recipe.slices.some((slice) => slice.flip)).toBe(false);
+
+    const three = makeDesign({
+      ...defaultState,
+      pattern: 'framed',
+      buySpecies: ['hard-maple', 'black-walnut', 'cherry'],
+    });
+    expect(three.board.cells[0]!.species).toBe('cherry');
+    expect(three.recipe.slices.some((slice) => slice.flip)).toBe(true);
+    expect(three.columns % 2).toBe(0);
+    expect(three.plan.shortfalls).toEqual([]);
+  });
+
   it('rounds the requested size to whole pieces', () => {
     const design = makeDesign({ ...defaultState, boardLength: inch(15.4), boardWidth: inch(12.2) });
     expect(design.columns).toBe(12);

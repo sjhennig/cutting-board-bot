@@ -18,7 +18,17 @@ const pattern = (page: Page, name: string) =>
 const section = (page: Page, title: string) =>
   page.locator('.plan section', { has: page.locator('h3', { hasText: title }) });
 
-const PATTERNS = ['Checkerboard', 'Brick', 'Stripes', 'Chaotic', 'Basket weave', 'Chevron', '3D illusion'];
+const PATTERNS = [
+  'Checkerboard',
+  'Brick',
+  'Stripes',
+  'Chaotic',
+  'Basket weave',
+  'Chevron',
+  'Plaid',
+  'Framed',
+  '3D illusion',
+];
 
 test('a first-time visitor gets from the first screen to a cut list', async ({ page }) => {
   const errors = watchForErrors(page);
@@ -108,7 +118,7 @@ test('the 3D illusion board explains its two panels and the re-ripping', async (
   await expect(panels.getByRole('heading', { name: 'Panel B' })).toBeVisible();
   await expect(panels.locator('.strip-order')).toHaveCount(2);
   await expect(panels.locator('.strip-order').first().locator('li')).toHaveCount(21);
-  await expect(panels).toContainText('The widths are the same as panel A, with the two woods swapped.');
+  await expect(panels).toContainText('The widths are the same as panel A; only the woods differ.');
   await expect(section(page, 'Slice the panels')).toContainText('panel A into 5 slices and panel B into 4 slices');
   const rerip = section(page, 'Rip the slices into pieces');
   await expect(rerip).toContainText('21 pieces');

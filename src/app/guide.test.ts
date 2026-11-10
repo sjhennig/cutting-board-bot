@@ -136,14 +136,16 @@ describe('buildGuide', () => {
     ]);
   });
 
-  it('has no re-ripping stage for boards whose slices are used whole', () => {
-    for (const pattern of PATTERNS.filter((entry) => entry.id !== 'illusion3d')) {
-      const guide = guideFor({ ...defaultState, ...pattern.defaults, pattern: pattern.id });
+  it('has a re-ripping stage only for boards with slices cut narrower', () => {
+    for (const pattern of PATTERNS) {
+      const state = { ...defaultState, ...pattern.defaults, pattern: pattern.id };
+      const narrower = makeDesign(state).recipe.slices.some((slice) => slice.ripTo !== undefined);
       expect(
-        guide.some((stage) => stage.id === 'rerip'),
+        guideFor(state).some((stage) => stage.id === 'rerip'),
         pattern.id,
-      ).toBe(false);
+      ).toBe(narrower);
     }
+    expect(guideFor(defaultState).some((stage) => stage.id === 'rerip')).toBe(false);
   });
 
   it('describes the trim for a brick board', () => {

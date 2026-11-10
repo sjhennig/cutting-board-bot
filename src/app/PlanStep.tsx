@@ -79,6 +79,7 @@ export function PlanStep({
   const stripLengths = [...new Set(groups.map((group) => show(group.panel.length)))];
   const reRips = reRipRows(recipe);
   const reRipped = reRips.length > 0;
+  const reRippedCount = recipe.slices.filter((slice) => slice.ripTo !== undefined).length;
   const width = Math.max(...groups.map((group) => group.width));
   const turnedOver = recipe.slices.some((slice) => slice.over);
   const flipped = recipe.slices.flatMap((slice, index) => (slice.flip ? [index + 1] : []));
@@ -343,12 +344,10 @@ export function PlanStep({
         {groups.map((group, groupIndex) => {
           const copies = group.ids.length;
           const first = groups[0]!.panel.strips;
-          const swapped =
+          const sameWidths =
             groupIndex > 0 &&
             group.panel.strips.length === first.length &&
-            group.panel.strips.every(
-              (strip, index) => strip.width === first[index]!.width && strip.species !== first[index]!.species,
-            );
+            group.panel.strips.every((strip, index) => strip.width === first[index]!.width);
           return (
             <div key={group.ids[0]} className="panel-group">
               {several && <h4>{capital(groupName(group))}</h4>}
@@ -360,7 +359,7 @@ export function PlanStep({
                   ' All the slants must lean the same way, with the two square edges on the outside.'}{' '}
                 {copies > 1 ? 'Each panel' : 'The panel'} will be <strong>{show(group.width)}</strong> wide,{' '}
                 {show(group.panel.thickness)} thick and {show(group.panel.length)} long.
-                {swapped && ` The widths are the same as ${groupName(groups[0]!)}, with the two woods swapped.`}
+                {sameWidths && ` The widths are the same as ${groupName(groups[0]!)}; only the woods differ.`}
               </p>
               <ol className="strip-order">
                 {group.panel.strips.map((strip, index) => (
@@ -409,9 +408,18 @@ export function PlanStep({
     rerip: (
       <>
         <p>
-          Rip each slice along its length into narrower pieces, as listed. That makes the{' '}
-          <strong>{plural(slices, 'piece')}</strong> of the board. Set the fence once for each width and cut every piece
-          of that width before moving it.
+          {reRippedCount === slices ? (
+            <>
+              Rip each slice along its length into narrower pieces, as listed. That makes the{' '}
+              <strong>{plural(slices, 'piece')}</strong> of the board.
+            </>
+          ) : (
+            <>
+              Rip the slices listed here along their length into narrower pieces. That makes{' '}
+              <strong>{plural(reRippedCount, 'narrow piece')}</strong>; the other slices are used whole.
+            </>
+          )}{' '}
+          Set the fence once for each width and cut every piece of that width before moving it.
         </p>
         <table className="fence">
           <caption>Pieces to rip from each slice</caption>
@@ -459,7 +467,8 @@ export function PlanStep({
             {recipe.slices.map((slice, index) => (
               <li key={index}>
                 {several && `Panel ${slice.panel}, `}
-                {show(slice.ripTo ?? groups.find((group) => group.ids.includes(slice.panel))!.panel.thickness)}
+                {slice.ripTo !== undefined ? show(slice.ripTo) : 'whole slice'}
+                {slice.flip && ', turned end for end'}
               </li>
             ))}
           </ol>
