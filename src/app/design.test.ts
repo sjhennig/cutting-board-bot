@@ -3,6 +3,7 @@ import { inch, type StockBoard } from '../engine';
 import {
   PATTERNS,
   biggestBoard,
+  fitToStock,
   defaultState as appDefault,
   makeDesign,
   suggestedStripThickness,
@@ -314,6 +315,54 @@ describe('makeDesign', () => {
       expect(appDefault.woodMode).toBe('have');
       expect(appDefault.stock).toEqual([]);
       expect(() => makeDesign(appDefault)).toThrow(/Add the boards you have/);
+    });
+
+    it('sets the strip thickness from the boards as they are entered', () => {
+      const board = (species: string, thickness: number): StockBoard => ({
+        id: species,
+        species,
+        thickness: inch(thickness),
+        width: inch(6),
+        length: inch(30),
+        quantity: 1,
+      });
+      const one = { ...appDefault, ...fitToStock(appDefault, { stock: [board('hard-maple', 1.4375)] }) };
+      expect(one.stripThickness).toBeCloseTo(inch(1.4375), 6);
+      // A second, thinner wood: every wood must be able to supply the strips.
+      const two = { ...one, ...fitToStock(one, { stock: [...one.stock, board('black-walnut', 1.25)] }) };
+      expect(two.stripThickness).toBeCloseTo(inch(1.25), 6);
+      // Choosing a pattern does not put a catalog thickness back.
+      const chevron = PATTERNS.find((entry) => entry.id === 'chevron')!;
+      const picked = fitToStock(two, { ...chevron.defaults, pattern: 'chevron' });
+      expect(picked.stripThickness).toBeCloseTo(inch(1.25), 6);
+      // When buying, the pattern's own choice stands.
+      expect(fitToStock(defaultState, { ...chevron.defaults }).stripThickness).toBeCloseTo(inch(0.75), 6);
+    });
+
+    it('sizes the board to the wood until the user chooses a size', () => {
+      const board = (species: string, quantity: number): StockBoard => ({
+        id: species,
+        species,
+        thickness: inch(1.4375),
+        width: inch(6.8125),
+        length: inch(31.5),
+        quantity,
+      });
+      // One board of each wood cannot make the usual 15 by 13 in. board, so it is made smaller.
+      const few = {
+        ...appDefault,
+        ...fitToStock(appDefault, { stock: [board('hard-maple', 1), board('black-walnut', 1)] }),
+      };
+      const small = makeDesign(few);
+      expect(small.notices.filter((notice) => notice.level === 'problem')).toEqual([]);
+      expect(small.board.length * small.board.width).toBeLessThan(inch(15) * inch(13));
+      // With plenty of wood it is the usual size, not a bigger one.
+      const plenty = { ...few, ...fitToStock(few, { stock: [board('hard-maple', 4), board('black-walnut', 4)] }) };
+      expect(plenty.boardLength).toBeCloseTo(inch(15), 6);
+      expect(makeDesign(plenty).notices.filter((notice) => notice.level === 'problem')).toEqual([]);
+      // Once the user has set a size, it is left alone, even if the wood runs short.
+      const chosen = { ...few, boardLength: inch(20), sizeChosen: true };
+      expect(fitToStock(chosen, { stock: few.stock }).boardLength).toBeUndefined();
     });
 
     it('can use boards of any size, not only catalog sizes', () => {

@@ -60,6 +60,7 @@ export function cleanState(input: unknown): DesignState {
     boardThickness: length('boardThickness'),
     seed: typeof raw.seed === 'number' && Number.isSafeInteger(raw.seed) ? raw.seed : defaultState.seed,
     showGuide: flag('showGuide'),
+    sizeChosen: flag('sizeChosen'),
   };
 }
 

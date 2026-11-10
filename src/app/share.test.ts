@@ -11,6 +11,7 @@ const own: DesignState = {
   cellWidth: inch(3),
   canPlane: true,
   showGuide: true,
+  sizeChosen: true,
   seed: 7,
   excluded: ['cherry'],
   stock: [

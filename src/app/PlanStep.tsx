@@ -4,7 +4,7 @@ import { WOOD_VAULT } from '../data/woodVault';
 import type { CatalogBoard } from '../data/woodVault';
 import { formatLength, type PlannedBoard } from '../engine';
 import type { Update } from './App';
-import { designSpecies, patternInfo, type Design, type DesignState } from './design';
+import { designSpecies, fitToStock, patternInfo, type Design, type DesignState } from './design';
 import { ArrangeDiagram, FlattenDiagram, HoneycombDiagram, LogDiagram, StockCutDiagram } from './diagrams';
 import { buildGuide } from './guide';
 import { groupName, panelGroups, reRipRows } from './panels';
@@ -228,18 +228,20 @@ export function PlanStep({
                 type="button"
                 className="chip"
                 onClick={() =>
-                  update({
-                    woodMode: 'have',
-                    excluded: [],
-                    stock: purchase.map((line, index) => ({
-                      id: `own-${Date.now()}-${index}`,
-                      species: line.board.species,
-                      thickness: line.board.thickness,
-                      width: line.board.width,
-                      length: line.board.length,
-                      quantity: line.quantity,
-                    })),
-                  })
+                  update(
+                    fitToStock(state, {
+                      woodMode: 'have',
+                      excluded: [],
+                      stock: purchase.map((line, index) => ({
+                        id: `own-${Date.now()}-${index}`,
+                        species: line.board.species,
+                        thickness: line.board.thickness,
+                        width: line.board.width,
+                        length: line.board.length,
+                        quantity: line.quantity,
+                      })),
+                    }),
+                  )
                 }
               >
                 My boards are a different size

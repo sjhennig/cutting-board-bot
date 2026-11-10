@@ -204,6 +204,8 @@ export interface DesignState {
   seed: number;
   /** Show full instructions on the last step, not just the cut list. */
   showGuide: boolean;
+  /** True once the user has set the board's size. Until then it follows their wood. */
+  sizeChosen: boolean;
 }
 
 export const END_TRIM = inch(1 / 2);
@@ -228,6 +230,7 @@ export const defaultState: DesignState = {
   boardThickness: inch(1.5),
   seed: 1,
   showGuide: false,
+  sizeChosen: false,
 };
 
 /** The woods the design uses, in order. */
@@ -611,12 +614,12 @@ function buildable(state: DesignState): boolean {
  * The biggest board the user's own wood can make in the current pattern, keeping the
  * proportions they have set. Null when no size works, or when the app is choosing the wood.
  *
- * It tries sizes from three times the current one downwards in steps of 3%, and takes the
- * first that can be built. Simple, and quick enough for a button press.
+ * It tries sizes from `largest` times the current one downwards in steps of 3%, and takes
+ * the first that can be built. Simple, and quick enough for a button press.
  */
-export function biggestBoard(state: DesignState): { boardLength: number; boardWidth: number } | null {
+export function biggestBoard(state: DesignState, largest = 3): { boardLength: number; boardWidth: number } | null {
   if (state.woodMode !== 'have') return null;
-  for (let scale = 3; scale > 0.1; scale *= 0.97) {
+  for (let scale = largest; scale > 0.1; scale *= 0.97) {
     const size = { boardLength: state.boardLength * scale, boardWidth: state.boardWidth * scale };
     if (buildable({ ...state, ...size })) {
       // Report the size the pieces actually make, so the boxes show round numbers of pieces.
@@ -625,4 +628,32 @@ export function biggestBoard(state: DesignState): { boardLength: number; boardWi
     }
   }
   return null;
+}
+
+/**
+ * Changes to a design, adjusted to suit the user's own boards. Used whenever the boards,
+ * the woods in use or the pattern change, so that someone working from their own wood is
+ * never left with numbers taken from the catalog.
+ *
+ * The strips become as thick as the boards. And until the user has chosen a size, the
+ * board is the usual size or the biggest their wood can make, whichever is smaller.
+ * `size: false` skips the sizing, which takes many trial designs.
+ */
+export function fitToStock(
+  state: DesignState,
+  changes: Partial<DesignState>,
+  options: { size?: boolean } = {},
+): Partial<DesignState> {
+  const suggested = suggestedStripThickness({ ...state, ...changes });
+  if (suggested === null) return changes;
+  const fitted: Partial<DesignState> = { ...changes, stripThickness: suggested };
+  const next = { ...state, ...fitted };
+  if (options.size === false || next.sizeChosen) return fitted;
+
+  const usual = patternInfo(next.pattern).defaults ?? {};
+  const start = {
+    boardLength: usual.boardLength ?? defaultState.boardLength,
+    boardWidth: usual.boardWidth ?? defaultState.boardWidth,
+  };
+  return { ...fitted, ...(biggestBoard({ ...next, ...start }, 1) ?? start) };
 }

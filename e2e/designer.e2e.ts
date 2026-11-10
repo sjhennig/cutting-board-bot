@@ -65,15 +65,18 @@ test('a first-time visitor designs a board around their own boards, at the sizes
   await expect(page.locator('table.stock tbody tr')).toHaveCount(2);
   await expect(page.locator('table.stock tbody tr').first()).toContainText('1-7/16"');
   await expect(page.locator('table.stock tbody tr').first()).toContainText('6-13/16"');
+  // The design already suits these boards: nothing to fix, and a board they can really make.
+  await expect(page.locator('.preview .notices .problem')).toHaveCount(0);
+  await expect(page.getByRole('img', { name: /^Preview of the board/ })).toBeVisible();
 
   await next(page);
   await expect(page.locator('label.pattern')).toHaveCount(PATTERNS.length);
 
   await next(page);
   await expect(page.getByRole('heading', { name: 'Set the size' })).toBeVisible();
-  // The designer notices the boards are 1-7/16 in. thick and offers to use that.
-  await page.getByRole('button', { name: '1-7/16"' }).click();
-  await page.getByRole('button', { name: 'Make the biggest board my wood allows' }).click();
+  // The strips are already as thick as the boards that were entered.
+  await expect(page.getByLabel('Strip thickness')).toHaveValue('1-7/16"');
+  await expect(page.locator('.step')).toContainText('This size was chosen to suit your boards');
   await expect(page.locator('.preview .notices .problem')).toHaveCount(0);
 
   await next(page);
@@ -203,7 +206,7 @@ test('the design is remembered between visits, and Start over clears it', async 
   await expect(pattern(page, 'Checkerboard')).toHaveClass(/selected/);
 });
 
-test('with too little of your own wood, the cut list says what is missing', async ({ page }) => {
+test('the board is sized to your own wood, and asking for more says what is missing', async ({ page }) => {
   await page.goto('/');
   await goTo(page, 'Your wood');
   await expect(page.getByText('No boards yet')).toBeVisible();
@@ -218,6 +221,15 @@ test('with too little of your own wood, the cut list says what is missing', asyn
   await page.getByLabel('Wood', { exact: true }).selectOption({ label: 'Black walnut' });
   await page.getByRole('button', { name: 'Add board' }).click();
   await expect(page.locator('table.stock tbody tr')).toHaveCount(2);
+  // Two boards cannot make the usual size, so the designer starts with a smaller board that they can.
+  await goTo(page, 'Cut list');
+  await expect(page.locator('.notices .problem')).toHaveCount(0);
+
+  // Asking for more than the wood allows says exactly what is missing.
+  await goTo(page, 'Size');
+  await page.getByLabel('Length', { exact: true }).fill('30');
+  await page.getByLabel('Length', { exact: true }).press('Enter');
+  await expect(page.locator('.preview .notices .problem').first()).toContainText('Not enough');
   await goTo(page, 'Cut list');
   await expect(page.locator('.notices .problem').first()).toContainText('Not enough');
 

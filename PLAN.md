@@ -231,7 +231,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 | Outputs             | Cut list in build order; optional full instructions with diagrams, numbered steps, sanding, oiling and care; print layout for both. Both handle designs with more than one kind of panel                            |
 | Tips                | Twenty-four, each citing a source read in full on 9 or 10 November 2026; disagreements between sources are shown                                                                                                    |
 | Data                | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                                                                              |
-| Project hygiene     | 178 unit tests and 19 end-to-end browser tests; formatting, type, unit and browser checks on every push; `main` is published automatically to GitHub Pages                                                          |
+| Project hygiene     | 180 unit tests and 19 end-to-end browser tests; formatting, type, unit and browser checks on every push; `main` is published automatically to GitHub Pages                                                          |
 
 ### What the second session changed
 
@@ -245,7 +245,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 - **"Make the biggest board my wood allows"** on the size step, for people working from boards they already have.
 - **A tighter print layout:** smaller type, pictures and margins on paper only.
 - **Tumbling blocks.** A small engine of its own (`src/engine/tumbling.ts`) lays out the honeycomb and reports the logs as a recipe, so the cut planner, shopping list and cut list screen are reused. The method was checked against two published builds, which changed the plan (section 3). Four tips from those builds were added; they were read on 10 November 2026.
-- **Intake changed after the first real use (the owner's).** The designer now starts from "I have boards": the user enters each board at its measured size, in any wood. The Wood Vault catalog is a reference only: it fills in common sizes on request, and it drives the optional "Suggest what to buy" shopping list. A button on the shopping list copies it into the user's own boards so the sizes can be corrected when the wood arrives.
+- **Intake changed after the first real use (the owner's).** The designer now starts from "I have boards": the user enters each board at its measured size, in any wood. The Wood Vault catalog is a reference only: it fills in common sizes on request, and it drives the optional "Suggest what to buy" shopping list. A button on the shopping list copies it into the user's own boards so the sizes can be corrected when the wood arrives. Entering boards also sets the strip thickness to match them, and sizes the board to what the wood can make (never bigger than the usual 15 by 13 in.) until the user chooses a size.
 - **A purchase planner bug was fixed.** When one board size was the best choice for several strip widths, the cut plan listed those boards several times over and bought one board per width. The first end-to-end test of the 3D board exposed it. No earlier pattern triggered it, because each needed one strip width per wood.
 
 ### Outstanding

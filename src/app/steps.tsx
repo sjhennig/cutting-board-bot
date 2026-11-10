@@ -10,6 +10,7 @@ import {
   biggestBoard,
   WEAVE_STRIPS,
   designSpecies,
+  fitToStock,
   makeDesign,
   patternInfo,
   suggestedStripThickness,
@@ -126,7 +127,7 @@ export function WoodStep({ state, update }: StepProps) {
               type="radio"
               name="mode"
               checked={state.woodMode === 'have'}
-              onChange={() => update({ woodMode: 'have' })}
+              onChange={() => update(fitToStock(state, { woodMode: 'have' }))}
             />
             <span className="title">I have boards</span>
             <span className="detail">Enter each board at its real size. Any wood, from any supplier.</span>
@@ -199,7 +200,7 @@ function OwnWood({ state, update }: StepProps) {
 
   const add = (): void => {
     const board: StockBoard = { ...draft, id: `own-${Date.now()}-${state.stock.length}` };
-    update({ stock: [...state.stock, board] });
+    update(fitToStock(state, { stock: [...state.stock, board] }));
   };
   const setQuantity = (id: string, quantity: number): void =>
     update({ stock: state.stock.map((board) => (board.id === id ? { ...board, quantity } : board)) });
@@ -247,7 +248,9 @@ function OwnWood({ state, update }: StepProps) {
                     type="button"
                     className="link"
                     aria-label={`Remove ${speciesName(board.species)} board`}
-                    onClick={() => update({ stock: state.stock.filter((item) => item.id !== board.id) })}
+                    onClick={() =>
+                      update(fitToStock(state, { stock: state.stock.filter((item) => item.id !== board.id) }))
+                    }
                   >
                     Remove
                   </button>
@@ -357,7 +360,10 @@ export function PatternStep({ state, update }: StepProps) {
           const enough = available >= pattern.minSpecies;
           let thumbnail = null;
           try {
-            const sample = makeDesign({ ...state, ...pattern.defaults, pattern: pattern.id });
+            const sample = makeDesign({
+              ...state,
+              ...fitToStock(state, { ...pattern.defaults, pattern: pattern.id }, { size: false }),
+            });
             thumbnail = <BoardPreview board={sample.board} label={`${pattern.name} pattern`} />;
           } catch {
             // Not buildable with the current woods; the card explains why.
@@ -374,7 +380,7 @@ export function PatternStep({ state, update }: StepProps) {
                 name="pattern"
                 checked={state.pattern === pattern.id}
                 disabled={!enough}
-                onChange={() => update({ ...pattern.defaults, pattern: pattern.id })}
+                onChange={() => update(fitToStock(state, { ...pattern.defaults, pattern: pattern.id }))}
               />
               <span className="thumbnail">{thumbnail}</span>
               <span className="title">{pattern.name}</span>
@@ -424,7 +430,7 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
               label="Length of each side"
               value={state.boardLength}
               unit={state.unit}
-              onChange={(boardLength) => update({ boardLength, boardWidth: boardLength })}
+              onChange={(boardLength) => update({ boardLength, boardWidth: boardLength, sizeChosen: true })}
               hint="This board is always square."
             />
           ) : (
@@ -433,13 +439,13 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
                 label="Length"
                 value={state.boardLength}
                 unit={state.unit}
-                onChange={(boardLength) => update({ boardLength })}
+                onChange={(boardLength) => update({ boardLength, sizeChosen: true })}
               />
               <LengthInput
                 label="Width"
                 value={state.boardWidth}
                 unit={state.unit}
-                onChange={(boardWidth) => update({ boardWidth })}
+                onChange={(boardWidth) => update({ boardWidth, sizeChosen: true })}
               />
             </>
           )}
@@ -451,6 +457,12 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
             hint="1-1/2 in. or more resists warping."
           />
         </div>
+        {state.woodMode === 'have' && state.stock.length > 0 && !state.sizeChosen && (
+          <p className="help">
+            This size was chosen to suit your boards. Change it to whatever you like: the notes beside the preview will
+            say if your wood runs short.
+          </p>
+        )}
         {state.woodMode === 'have' && state.stock.length > 0 && (
           <div className="presets">
             <button
@@ -459,7 +471,7 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
               onClick={() => {
                 const size = biggestBoard(state);
                 setNoFit(size === null);
-                if (size) update(size);
+                if (size) update({ ...size, sizeChosen: true });
               }}
             >
               Make the biggest board my wood allows
@@ -608,11 +620,13 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
                     type="checkbox"
                     checked={!state.excluded.includes(id)}
                     onChange={() =>
-                      update({
-                        excluded: state.excluded.includes(id)
-                          ? state.excluded.filter((item) => item !== id)
-                          : [...state.excluded, id],
-                      })
+                      update(
+                        fitToStock(state, {
+                          excluded: state.excluded.includes(id)
+                            ? state.excluded.filter((item) => item !== id)
+                            : [...state.excluded, id],
+                        }),
+                      )
                     }
                   />
                   <Swatch species={id} />
