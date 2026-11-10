@@ -18,6 +18,13 @@ const pattern = (page: Page, name: string) =>
 const section = (page: Page, title: string | RegExp) =>
   page.locator('.plan section', { has: page.locator('h3', { hasText: title }) });
 
+/** Open the designer and ask it to suggest what to buy, as someone with no wood yet would. */
+async function startBuying(page: Page): Promise<void> {
+  await page.goto('/');
+  await goTo(page, 'Your wood');
+  await page.getByRole('radio', { name: /Suggest what to buy/ }).check();
+}
+
 const PATTERNS = [
   'Checkerboard',
   'Brick',
@@ -31,36 +38,83 @@ const PATTERNS = [
   '3D illusion',
 ];
 
-test('a first-time visitor gets from the first screen to a cut list', async ({ page }) => {
+test('a first-time visitor designs a board around their own boards, at the sizes they measure', async ({ page }) => {
   const errors = watchForErrors(page);
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Tell us about your shop' })).toBeVisible();
 
   await next(page);
-  await expect(page.getByRole('heading', { name: 'Choose your wood' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your wood' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: /I have boards/ })).toBeChecked();
+  await expect(page.getByText('No boards yet')).toBeVisible();
+  await expect(page.locator('.preview')).toContainText('Add the boards you have');
+
+  // Sizes no catalog sells: whatever the tape measure says.
+  for (const wood of ['Hard maple', 'Black walnut']) {
+    await page.getByLabel('Wood', { exact: true }).selectOption({ label: wood });
+    for (const [label, size] of [
+      ['Thickness', '1-7/16'],
+      ['Width', '6-13/16'],
+      ['Length', '31-1/2'],
+    ] as const) {
+      await page.getByLabel(label, { exact: true }).fill(size);
+      await page.getByLabel(label, { exact: true }).press('Enter');
+    }
+    await page.getByRole('button', { name: 'Add board' }).click();
+  }
+  await expect(page.locator('table.stock tbody tr')).toHaveCount(2);
+  await expect(page.locator('table.stock tbody tr').first()).toContainText('1-7/16"');
+  await expect(page.locator('table.stock tbody tr').first()).toContainText('6-13/16"');
+  // The design already suits these boards: nothing to fix, and a board they can really make.
+  await expect(page.locator('.preview .notices .problem')).toHaveCount(0);
   await expect(page.getByRole('img', { name: /^Preview of the board/ })).toBeVisible();
 
   await next(page);
-  await expect(page.getByRole('heading', { name: 'Pick a pattern' })).toBeVisible();
   await expect(page.locator('label.pattern')).toHaveCount(PATTERNS.length);
 
   await next(page);
   await expect(page.getByRole('heading', { name: 'Set the size' })).toBeVisible();
-  await expect(page.locator('.preview .size')).toHaveText('15" × 13" × 1-1/2" thick');
+  // The strips are already as thick as the boards that were entered.
+  await expect(page.getByLabel('Strip thickness')).toHaveValue('1-7/16"');
+  await expect(page.locator('.step')).toContainText('This size was chosen to suit your boards');
+  await expect(page.locator('.preview .notices .problem')).toHaveCount(0);
 
   await next(page);
   await expect(page.getByRole('heading', { name: 'Your cut list' })).toBeVisible();
   await expect(page.locator('.plan .lead')).toContainText('checkerboard board in Hard maple and Black walnut');
-  await expect(section(page, 'Buy your wood')).toContainText('12 boards in total');
-  await expect(section(page, 'Cut the strips')).toContainText('Every strip is 14-3/8" long');
-  await expect(section(page, 'Slice the panel')).toContainText('8 slices');
-  await expect(page.locator('.notices')).toHaveCount(0);
+  await expect(section(page, 'Gather your boards')).toContainText('2 boards in total');
+  await expect(page.locator('.notices .problem')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Print cut list' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
+test('someone with no wood yet gets a shopping list, then swaps in the sizes that arrive', async ({ page }) => {
+  const errors = watchForErrors(page);
+  await startBuying(page);
+  await expect(page.getByRole('img', { name: /^Preview of the board/ })).toBeVisible();
+  await expect(page.locator('.step')).toContainText('as a reference');
+
+  await goTo(page, 'Size');
+  await expect(page.locator('.preview .size')).toHaveText('15" × 13" × 1-1/2" thick');
+
+  await next(page);
+  await expect(section(page, 'Buy your wood')).toContainText('12 boards in total');
+  await expect(section(page, 'Cut the strips')).toContainText('Every strip is 14-3/8" long');
+  await expect(section(page, 'Slice the panel')).toContainText('8 slices');
+  await expect(page.locator('.notices')).toHaveCount(0);
+
+  // The shopping list becomes the user's own boards, ready to be corrected.
+  await page.getByRole('button', { name: 'My boards are a different size' }).click();
+  await expect(section(page, 'Gather your boards')).toBeVisible();
+  await goTo(page, 'Your wood');
+  await expect(page.getByRole('radio', { name: /I have boards/ })).toBeChecked();
+  await expect(page.locator('table.stock tbody tr')).toHaveCount(2);
+  await expect(page.getByLabel('How many Hard maple boards')).toHaveValue('6');
+  expect(errors).toEqual([]);
+});
+
 test('full instructions add pictures, steps and sourced tips', async ({ page }) => {
-  await page.goto('/');
+  await startBuying(page);
   await goTo(page, 'Cut list');
   await expect(page.locator('.plan section h3 .number')).toHaveCount(6);
 
@@ -79,7 +133,7 @@ test('full instructions add pictures, steps and sourced tips', async ({ page }) 
 for (const name of PATTERNS) {
   test(`the ${name} pattern produces a cut list and instructions with nothing to fix`, async ({ page }) => {
     const errors = watchForErrors(page);
-    await page.goto('/');
+    await startBuying(page);
     if (name === 'Tumbling blocks') {
       // The one pattern that needs a third wood.
       await goTo(page, 'Pattern');
@@ -110,7 +164,7 @@ for (const name of PATTERNS) {
 }
 
 test('the 3D illusion board explains its two panels and the re-ripping', async ({ page }) => {
-  await page.goto('/');
+  await startBuying(page);
   await goTo(page, 'Pattern');
   await expect(pattern(page, '3D illusion').locator('.level')).toHaveText('Advanced');
   await pattern(page, '3D illusion').click();
@@ -139,7 +193,7 @@ test('the 3D illusion board explains its two panels and the re-ripping', async (
 });
 
 test('the design is remembered between visits, and Start over clears it', async ({ page }) => {
-  await page.goto('/');
+  await startBuying(page);
   await goTo(page, 'Pattern');
   await pattern(page, 'Brick').click();
   await page.reload();
@@ -152,10 +206,9 @@ test('the design is remembered between visits, and Start over clears it', async 
   await expect(pattern(page, 'Checkerboard')).toHaveClass(/selected/);
 });
 
-test('with too little of your own wood, the cut list says what is missing', async ({ page }) => {
+test('the board is sized to your own wood, and asking for more says what is missing', async ({ page }) => {
   await page.goto('/');
   await goTo(page, 'Your wood');
-  await page.getByRole('radio', { name: /I already have boards/ }).check();
   await expect(page.getByText('No boards yet')).toBeVisible();
 
   // One maple board is not enough for a checkerboard, which needs two woods.
@@ -168,6 +221,15 @@ test('with too little of your own wood, the cut list says what is missing', asyn
   await page.getByLabel('Wood', { exact: true }).selectOption({ label: 'Black walnut' });
   await page.getByRole('button', { name: 'Add board' }).click();
   await expect(page.locator('table.stock tbody tr')).toHaveCount(2);
+  // Two boards cannot make the usual size, so the designer starts with a smaller board that they can.
+  await goTo(page, 'Cut list');
+  await expect(page.locator('.notices .problem')).toHaveCount(0);
+
+  // Asking for more than the wood allows says exactly what is missing.
+  await goTo(page, 'Size');
+  await page.getByLabel('Length', { exact: true }).fill('30');
+  await page.getByLabel('Length', { exact: true }).press('Enter');
+  await expect(page.locator('.preview .notices .problem').first()).toContainText('Not enough');
   await goTo(page, 'Cut list');
   await expect(page.locator('.notices .problem').first()).toContainText('Not enough');
 
@@ -190,7 +252,8 @@ test('with too little of your own wood, the cut list says what is missing', asyn
 });
 
 test('switching to millimetres changes every size on the cut list', async ({ page }) => {
-  await page.goto('/');
+  await startBuying(page);
+  await goTo(page, 'Your shop');
   await page.getByRole('radio', { name: /Millimetres/ }).check();
   await goTo(page, 'Cut list');
   await expect(page.locator('.plan .lead')).toContainText('381 mm × 330.2 mm × 38.1 mm thick');
@@ -198,7 +261,7 @@ test('switching to millimetres changes every size on the cut list', async ({ pag
 });
 
 test('a copied link opens the same design in a browser that has never seen it', async ({ page, browser }) => {
-  await page.goto('/');
+  await startBuying(page);
   await goTo(page, 'Pattern');
   await pattern(page, 'Chevron').click();
   await goTo(page, 'Cut list');
@@ -224,6 +287,7 @@ test('a copied link opens the same design in a browser that has never seen it', 
 test('a damaged link falls back to a working designer', async ({ page }) => {
   const errors = watchForErrors(page);
   await page.goto('/#d=eyJwYXR0ZXJuIjoibm9wZSIsInN0b2NrIjpbe31dfQ'); // {"pattern":"nope","stock":[{}]}
+  // The bad pattern and the board that is not a board are dropped; the wood mode of an old link is kept.
   await expect(page.locator('.plan .lead')).toContainText('checkerboard board');
   await page.goto('/#d=!!!');
   await page.reload();

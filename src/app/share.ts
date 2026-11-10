@@ -60,6 +60,7 @@ export function cleanState(input: unknown): DesignState {
     boardThickness: length('boardThickness'),
     seed: typeof raw.seed === 'number' && Number.isSafeInteger(raw.seed) ? raw.seed : defaultState.seed,
     showGuide: flag('showGuide'),
+    sizeChosen: flag('sizeChosen'),
   };
 }
 
@@ -82,6 +83,8 @@ export function encodeDesign(state: DesignState): string {
   for (const key of Object.keys(defaultState) as (keyof DesignState)[]) {
     if (JSON.stringify(state[key]) !== JSON.stringify(defaultState[key])) changed[key] = state[key];
   }
+  // Always said outright, so a link keeps its meaning if the default ever changes again.
+  changed.woodMode = state.woodMode;
   return toBase64Url(JSON.stringify(changed));
 }
 
@@ -90,7 +93,8 @@ export function decodeDesign(text: string): DesignState | null {
   try {
     const parsed: unknown = JSON.parse(fromBase64Url(text));
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return null;
-    return cleanState(parsed);
+    // Links made before own boards became the default left out the wood mode when it was "buy".
+    return cleanState({ woodMode: 'buy', ...parsed });
   } catch {
     return null;
   }

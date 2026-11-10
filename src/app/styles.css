@@ -973,3 +973,9 @@ svg.diagram text {
     columns: 3 150px;
   }
 }
+
+@media print {
+  .own-sizes {
+    display: none;
+  }
+}

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { SOURCES_CHECKED, TIPS, type StageId } from '../data/tips';
 import { inch } from '../engine';
-import { PATTERNS, defaultState, makeDesign, type DesignState } from './design';
+import { PATTERNS, defaultState as appDefault, makeDesign, type DesignState } from './design';
+
+// Most of these tests are about the shopping list, so they start from "suggest what to buy".
+const defaultState: DesignState = { ...appDefault, woodMode: 'buy' };
 import { buildGuide, needsRipping } from './guide';
 
 const guideFor = (state: DesignState) => buildGuide(state, makeDesign(state));

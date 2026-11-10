@@ -11,6 +11,7 @@ const own: DesignState = {
   cellWidth: inch(3),
   canPlane: true,
   showGuide: true,
+  sizeChosen: true,
   seed: 7,
   excluded: ['cherry'],
   stock: [
@@ -29,8 +30,16 @@ describe('share links', () => {
   });
 
   it('keeps the link short by leaving out settings that are still the defaults', () => {
-    expect(encodeDesign(defaultState)).toBe('e30'); // "{}"
-    expect(encodeDesign({ ...defaultState, pattern: 'brick' }).length).toBeLessThan(40);
+    // Only the wood mode is always written, so the link survives a change of default.
+    expect(encodeDesign(defaultState)).toBe('eyJ3b29kTW9kZSI6ImhhdmUifQ'); // {"woodMode":"have"}
+    expect(encodeDesign({ ...defaultState, pattern: 'brick' }).length).toBeLessThan(60);
+  });
+
+  it('still opens links made when buying was the default', () => {
+    // {"pattern":"chevron"}: made before own boards became the default, so it means "buy".
+    const old = decodeDesign('eyJwYXR0ZXJuIjoiY2hldnJvbiJ9')!;
+    expect(old.woodMode).toBe('buy');
+    expect(old.pattern).toBe('chevron');
   });
 
   it('uses only characters that are safe in a link', () => {

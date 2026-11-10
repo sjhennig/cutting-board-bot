@@ -7,7 +7,7 @@ See [PLAN.md](PLAN.md) for the full plan. Phases 1 to 4 are built, and Phase 5 i
 ## Using the designer
 
 1. **Your shop:** units, saw blade width, and whether you have a planer.
-2. **Your wood:** pick woods to buy from The Wood Vault, or enter boards you already have.
+2. **Your wood:** enter the boards you have, at the sizes you measure. Any wood, from any supplier. If you have no wood yet, the designer can suggest a shopping list instead, using The Wood Vault's sizes as a reference.
 3. **Pattern:** checkerboard, brick, stripes or chaotic for beginners; basket weave, chevron, plaid or framed for a step up; tumbling blocks (three woods) or the 3D illusion board for a challenge.
 4. **Size:** the board you want, with a live preview and warnings.
 5. **Cut list:** what to buy, how to cut each board, and the glue-up order. Switch on "Full instructions" for a picture and tips at every step, plus sanding, oiling and care. Print either from here.
