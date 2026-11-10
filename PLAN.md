@@ -99,7 +99,7 @@ This family does not fit the slice model, so it gets its own small engine.
 
 The first version of this plan assumed a chevron needs a second glue-up, sawn at an angle. That wastes two large corners of the slab. The better method, and the one cuttingboarddesigner.com uses, is a single glue-up of strips ripped with a tilted blade: each strip then shows as a slanted band on the end grain, and turning alternate slices upside down mirrors the slant into a zigzag. The engine models that, and no second-generation machinery was needed.
 
-Plaid, framed and pixel art boards are not built yet. Plaid and framed need the interface to handle two different panels in one design, which the engine already supports.
+Plaid, framed and pixel art boards are not built yet. The interface can now handle two different panels in one design (section 11), which is what plaid and framed needed.
 
 ### How the 3D illusion board is made (confirmed from MTM Wood's plan)
 
@@ -202,7 +202,7 @@ Where sources disagree, the app says so instead of picking a side silently. Plan
 | 2. First usable version (done)  | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided                                           |
 | 3. Instructions (done)          | Step-by-step guide, sourced tips, print layout             | Every step has a diagram; every tip has a checked link                                             |
 | 4. Intermediate patterns (done) | Basket weave and chevron                                   | Chevron and basket weave render and produce correct cut lists                                      |
-| 5. Advanced patterns            | Rhombus engine, tumbling blocks, 3D illusion board         | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
+| 5. Advanced patterns (started)  | Rhombus engine, tumbling blocks, 3D illusion board (done)  | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
 | 6. Polish                       | Grain textures, share links, cost estimate, shopping list  | -                                                                                                  |
 
 Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
@@ -217,20 +217,26 @@ Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 
 ## 11. Status and where to pick up
 
-Written 10 November 2026, at the end of the first working session. Read this section first.
+Updated 10 November 2026, at the end of the second working session. Read this section first.
 
 ### Completed
 
-| Area                  | What exists                                                                                                                                            |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Geometry engine       | Recipe model, finished size, surface layout, slice counts, full waste breakdown, cut planner, purchase planner, design checks (`src/engine`)           |
-| Patterns in the app   | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron (intermediate)                                                                 |
-| Patterns, engine only | MTM Wood's 3D illusion board: generated and tested against the published plan, but not offered in the interface                                        |
-| Designer              | Five steps: shop, wood, pattern, size, cut list. Buy from the Wood Vault catalog or enter your own boards. Design remembered in the browser            |
-| Outputs               | Cut list in build order; optional full instructions with five diagrams, numbered steps, sanding, oiling and care; print layout for both                |
-| Tips                  | Twenty, each citing a source read in full on 9 November 2026; disagreements between sources are shown                                                  |
-| Data                  | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                 |
-| Project hygiene       | 111 automated tests; formatting, type and test checks on every push (`npm run check`); automatic publishing of `main` to GitHub Pages once switched on |
+| Area                | What exists                                                                                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Geometry engine     | Recipe model, finished size, surface layout, slice counts, which pieces to rip from each slice, full waste breakdown, cut planner, purchase planner, design checks (`src/engine`)        |
+| Patterns in the app | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron (intermediate); MTM Wood's 3D illusion board (advanced)                                                          |
+| Designer            | Five steps: shop, wood, pattern, size, cut list. Buy from the Wood Vault catalog or enter your own boards. Design remembered in the browser                                              |
+| Outputs             | Cut list in build order; optional full instructions with diagrams, numbered steps, sanding, oiling and care; print layout for both. Both handle designs with more than one kind of panel |
+| Tips                | Twenty, each citing a source read in full on 9 November 2026; disagreements between sources are shown                                                                                    |
+| Data                | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                                                   |
+| Project hygiene     | 127 unit tests and 13 end-to-end browser tests; formatting, type, unit and browser checks on every push; automatic publishing of `main` to GitHub Pages once switched on                 |
+
+### What the second session changed
+
+- **The cut list and instructions no longer assume one panel.** Panels that are built identically (the logs of a basket weave) are described once; panels that differ (the two of the 3D board) each get their own strip order, length and picture. This is the change plaid and framed boards were waiting for.
+- **A new build stage, "Rip the slices into pieces",** appears for designs whose slices are cut narrower. The engine now says which pieces come from which slice, not just how many slices are needed.
+- **The 3D illusion board is in the pattern gallery.** It is always square. At 317 mm it uses MTM Wood's widths to the millimetre; other sizes scale them, and in inches every width is rounded to 1/32 in. so the numbers on the cut list are the numbers to set on the saw.
+- **A purchase planner bug was fixed.** When one board size was the best choice for several strip widths, the cut plan listed those boards several times over and bought one board per width. The first end-to-end test of the 3D board exposed it. No earlier pattern triggered it, because each needed one strip width per wood.
 
 ### Outstanding
 
@@ -240,11 +246,11 @@ Written 10 November 2026, at the end of the first working session. Read this sec
 - Try the designer as a real user and note what is confusing. Nobody but the author has used it yet.
 - Confirm what a Wood Vault cutting board pack contains (how many strips, how wide), so packs can join the catalog.
 - Read the USDA cutting board page by hand if bleach-sanitising advice is wanted in the care card.
+- Check the 3D board's step-by-step wording against MTM Wood's plan. The sizes and the order of work are from the plan; the detail of each step (how to hold a slice when ripping it, for example) was worked out from the geometry, and the app says so.
 
 **Patterns**
 
-- 3D illusion board in the interface. The engine work is done; the cut list screen assumes one kind of panel and this design has two.
-- Plaid and framed boards. Same blocker as the 3D board, plus small pattern generators.
+- Plaid and framed boards. The interface is now ready for them; each needs a small pattern generator.
 - Tumbling blocks. Needs its own geometry (60 degree rhombus sticks in hexagonal logs, section 3) and a published build guide to check against. Not started.
 - Pixel art. Not started.
 - Chevron tilt is fixed at 30 degrees. Its build steps are worked out from geometry and have not been checked against a published guide.
@@ -252,8 +258,11 @@ Written 10 November 2026, at the end of the first working session. Read this sec
 **Designer**
 
 - "What is the biggest board I can make from my wood?" With your own boards you set a size and the app says whether it fits; it does not work backwards.
+- The 3D board's shopping list is correct but fiddly with maple and walnut and no planer: thick maple is sold at 1-1/2 in. and walnut at 1-5/8 in., so the maple comes from four different products. With a planer, or with cherry in place of maple, it is two boards. The app could suggest this.
+- In millimetres with no planer, the 3D board's 38 mm maple edge strip cannot be bought: the nearest board is 38.1 mm. A planning tolerance of a fraction of a millimetre would fix it.
+- The cut planner places each strip in the first board with room. For the 3D board that can pair a 5/32 in. piece with a wide one in the same slice, which is awkward to saw. A smarter pairing would help.
 - Animated view of the cut-and-flip step. A still diagram covers it for now.
-- Full instructions print at about ten pages. Worth a compact option.
+- Full instructions print at about ten pages, more for the 3D board. Worth a compact option.
 
 **Polish (Phase 6)**
 
@@ -261,15 +270,15 @@ Written 10 November 2026, at the end of the first working session. Read this sec
 
 **Verification**
 
-- The browser walk-throughs were run by hand and are not in the repository. An automated end-to-end test would catch interface regressions that the unit tests cannot.
+- The end-to-end tests check that every pattern reaches a cut list with nothing to fix and no errors. They do not check that pictures look right, or the printed layout.
 - Species hardness figures were never checked and are not used in the app.
 - Competitors not yet tried: Cutting Board Studio (thecraftycatsman.com).
 
 ### Recommended next session
 
-1. **Make the cut list screen handle more than one kind of panel.** This single change unlocks the 3D illusion board, plaid and framed boards, and the 3D board is the closest thing to the original brief's "more complicated 3D patterns". Start in `src/app/PlanStep.tsx` and `src/app/guide.ts`, which both read `recipe.panels[0]`.
-2. **Add the 3D illusion board to the pattern gallery** as the first Advanced pattern, using `illusion3d` in `src/engine/patterns.ts`.
-3. **Add an automated end-to-end test** of the five steps before the interface grows further.
-4. Then tumbling blocks, which is the largest remaining piece of new geometry.
+1. **Plaid and framed boards.** Now cheap: each is a pattern generator in `src/engine/patterns.ts` and an entry in `PATTERNS` in `src/app/design.ts`. Add an end-to-end case for each by adding its name to the list in `e2e/designer.e2e.ts`.
+2. **Tidy the 3D board's shopping list** (the three Designer items above about it).
+3. **Tumbling blocks**, the largest remaining piece of new geometry. Read a published build guide first (section 10, item 5).
+4. Share links, so a design can be sent to someone else.
 
 If real-user feedback arrives first, let it reorder this list.
