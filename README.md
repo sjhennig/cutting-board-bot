@@ -2,13 +2,13 @@
 
 A browser-based designer for end grain cutting boards. It takes the wood you have, lets you pick a pattern, and produces a cut list and build instructions.
 
-See [PLAN.md](PLAN.md) for the full plan. Phases 1 to 4 are built, and Phase 5 is started: the geometry engine, a five-step designer that ends in a printable cut list, optional step-by-step instructions with sourced tips, two intermediate patterns, and the first advanced one, MTM Wood's 3D illusion board.
+See [PLAN.md](PLAN.md) for the full plan. Phases 1 to 4 are built, and Phase 5 is started: the geometry engine, a five-step designer that ends in a printable cut list, optional step-by-step instructions with sourced tips, four intermediate patterns, and the first advanced one, MTM Wood's 3D illusion board.
 
 ## Using the designer
 
 1. **Your shop:** units, saw blade width, and whether you have a planer.
 2. **Your wood:** pick woods to buy from The Wood Vault, or enter boards you already have.
-3. **Pattern:** checkerboard, brick, stripes or chaotic for beginners; basket weave or chevron for a step up; the 3D illusion board for a challenge.
+3. **Pattern:** checkerboard, brick, stripes or chaotic for beginners; basket weave, chevron, plaid or framed for a step up; the 3D illusion board for a challenge.
 4. **Size:** the board you want, with a live preview and warnings.
 5. **Cut list:** what to buy, how to cut each board, and the glue-up order. Switch on "Full instructions" for a picture and tips at every step, plus sanding, oiling and care. Print either from here.
 
@@ -23,7 +23,7 @@ Your design is remembered in your browser between visits.
 | `types.ts`    | The recipe and result shapes                                                                            |
 | `units.ts`    | Reads and writes fractional inches and metric                                                           |
 | `board.ts`    | Finished size, surface layout, slices needed, where the waste goes, which pieces to rip from each slice |
-| `patterns.ts` | Stripes, checkerboard, brick, chaotic and the 3D illusion board                                         |
+| `patterns.ts` | One function for each pattern, from stripes to the 3D illusion board                                    |
 | `cutplan.ts`  | Which stock board each strip is cut from, and what is missing                                           |
 | `purchase.ts` | What to buy from a catalog for a design                                                                 |
 | `checks.ts`   | Warnings: panel too short, board too thin, pieces too narrow                                            |
