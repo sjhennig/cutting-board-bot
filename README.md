@@ -12,7 +12,7 @@ See [PLAN.md](PLAN.md) for the full plan. Phases 1 to 4 are built, and Phase 5 i
 4. **Size:** the board you want, with a live preview and warnings.
 5. **Cut list:** what to buy, how to cut each board, and the glue-up order. Switch on "Full instructions" for a picture and tips at every step, plus sanding, oiling and care. Print either from here.
 
-Your design is remembered in your browser between visits.
+Your design is remembered in your browser between visits. "Copy a link to this design" on the last step makes a link that opens the same design for anyone; the design travels in the link itself, so nothing is stored on a server.
 
 ## The engine
 
@@ -34,7 +34,7 @@ Your design is remembered in your browser between visits.
 
 Tips live in `src/data/tips.ts`. Each one must name a source that you have opened and read, and say only what that source says. Where good sources disagree, record the other view in `otherView`. Update `SOURCES_CHECKED` when you re-read the sources.
 
-`src/app` is the interface. `design.ts` turns the user's choices into a recipe and collects the warnings; `panels.ts` groups identical panels so the cut list describes each kind once; the other files are the screens.
+`src/app` is the interface. `design.ts` turns the user's choices into a recipe and collects the warnings; `panels.ts` groups identical panels so the cut list describes each kind once; `share.ts` makes and reads share links, and checks every saved or shared design field by field before using it; the other files are the screens.
 
 `e2e` holds the end-to-end tests: a real browser clicks through all five steps for every pattern.
 

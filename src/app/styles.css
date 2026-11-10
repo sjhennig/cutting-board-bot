@@ -256,6 +256,22 @@ svg.panel {
   margin-left: auto;
 }
 
+.step-nav .primary + .primary {
+  margin-left: 0;
+}
+
+.share-link {
+  margin-top: 14px;
+  font-size: 0.92rem;
+}
+
+.share-link input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
 .empty {
   color: var(--muted);
   background: var(--bg);
@@ -874,4 +890,10 @@ svg.diagram text {
 
 .plan table.cuts td:nth-child(4) {
   min-width: 11em;
+}
+
+@media print {
+  .share-link {
+    display: none;
+  }
 }

@@ -225,11 +225,11 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Geometry engine     | Recipe model, finished size, surface layout, slice counts, which pieces to rip from each slice, full waste breakdown, cut planner, purchase planner, design checks (`src/engine`)        |
 | Patterns in the app | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron, plaid, framed (intermediate); MTM Wood's 3D illusion board (advanced)                                           |
-| Designer            | Five steps: shop, wood, pattern, size, cut list. Buy from the Wood Vault catalog or enter your own boards. Design remembered in the browser                                              |
+| Designer            | Five steps: shop, wood, pattern, size, cut list. Buy from the Wood Vault catalog or enter your own boards. Design remembered in the browser, and shareable as a link                     |
 | Outputs             | Cut list in build order; optional full instructions with diagrams, numbered steps, sanding, oiling and care; print layout for both. Both handle designs with more than one kind of panel |
 | Tips                | Twenty, each citing a source read in full on 9 November 2026; disagreements between sources are shown                                                                                    |
 | Data                | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                                                   |
-| Project hygiene     | 144 unit tests and 15 end-to-end browser tests; formatting, type, unit and browser checks on every push; automatic publishing of `main` to GitHub Pages once switched on                 |
+| Project hygiene     | 157 unit tests and 17 end-to-end browser tests; formatting, type, unit and browser checks on every push; automatic publishing of `main` to GitHub Pages once switched on                 |
 
 ### What the second session changed
 
@@ -239,6 +239,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 - **Plaid and framed boards were added** on top of that. Plaid is squares divided by 1/4 in. lines both ways; the cross lines are thin pieces ripped from a second panel. Framed puts a border of the last wood round a plain centre (two woods) or a checkerboard (three). Borders and lines are end grain, as section 4 requires.
 - **Boards within 0.15 mm of the thickness wanted are used as they are.** Without this a 38 mm strip could not come from a 38.1 mm (1-1/2 in.) board unless it was planed.
 - **The designer says when a planer would shorten the shopping list.** Maple and walnut are sold in different thicknesses, so the 3D board in those woods draws maple from four products; with a planer and 1-1/2 in. strips it is two boards.
+- **Share links.** "Copy a link to this design" on the last step. The design travels in the link, so there is still no server. Saved and shared designs are now checked field by field, so a damaged link or an old saved design cannot break the page.
 - **A purchase planner bug was fixed.** When one board size was the best choice for several strip widths, the cut plan listed those boards several times over and bought one board per width. The first end-to-end test of the 3D board exposed it. No earlier pattern triggered it, because each needed one strip width per wood.
 
 ### Outstanding
@@ -267,7 +268,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 
 **Polish (Phase 6)**
 
-- Wood grain textures in previews, share links, cost estimate.
+- Wood grain textures in previews, cost estimate.
 
 **Verification**
 
@@ -278,6 +279,6 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 ### Recommended next session
 
 1. **Tumbling blocks**, the largest remaining piece of new geometry. Read a published build guide first (section 10, item 5).
-2. Share links, so a design can be sent to someone else.
+2. "What is the biggest board I can make from my wood?" for people working from offcuts.
 
 If real-user feedback arrives first, let it reorder this list.

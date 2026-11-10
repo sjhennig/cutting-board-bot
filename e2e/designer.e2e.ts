@@ -176,3 +176,37 @@ test('switching to millimetres changes every size on the cut list', async ({ pag
   await expect(page.locator('.plan .lead')).toContainText('381 mm × 330.2 mm × 38.1 mm thick');
   await expect(page.locator('.plan')).not.toContainText('"');
 });
+
+test('a copied link opens the same design in a browser that has never seen it', async ({ page, browser }) => {
+  await page.goto('/');
+  await goTo(page, 'Pattern');
+  await pattern(page, 'Chevron').click();
+  await goTo(page, 'Cut list');
+  await page.getByRole('button', { name: 'Copy a link to this design' }).click();
+  const link = await page.getByLabel(/Anyone who opens it sees this design/).inputValue();
+  expect(link).toContain('#d=');
+
+  const other = await browser.newContext();
+  const visitor = await other.newPage();
+  const errors = watchForErrors(visitor);
+  await visitor.goto(link);
+  // The visitor lands on the cut list, with the address tidied.
+  await expect(visitor.locator('.plan .lead')).toContainText('chevron board in Hard maple and Black walnut');
+  await expect(visitor).toHaveURL(/^[^#]*$/);
+  // It is now their design: it survives a reload without the link.
+  await visitor.reload();
+  await goTo(visitor, 'Pattern');
+  await expect(pattern(visitor, 'Chevron')).toHaveClass(/selected/);
+  expect(errors).toEqual([]);
+  await other.close();
+});
+
+test('a damaged link falls back to a working designer', async ({ page }) => {
+  const errors = watchForErrors(page);
+  await page.goto('/#d=eyJwYXR0ZXJuIjoibm9wZSIsInN0b2NrIjpbe31dfQ'); // {"pattern":"nope","stock":[{}]}
+  await expect(page.locator('.plan .lead')).toContainText('checkerboard board');
+  await page.goto('/#d=!!!');
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Tell us about your shop' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
