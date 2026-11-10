@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { woodVaultBoards } from '../data/woodVault';
-import { checkerboard, chaotic, defaultShop } from './patterns';
+import { checkerboard, chaotic, defaultShop, illusion3d } from './patterns';
 import { suggestPurchase } from './purchase';
 import { inch } from './units';
 
@@ -95,5 +95,25 @@ describe('suggestPurchase', () => {
     expect(supplied).toBe(recipe.panels[0]!.strips.length);
     const bought = purchase.lines.reduce((sum, line) => sum + line.quantity, 0);
     expect(bought).toBe(purchase.plan.boards.length);
+  });
+
+  it('shares boards between strip widths, and numbers every board once', () => {
+    // A 3D illusion board in inch sizes: eleven strip widths in each wood.
+    const steps = [42, 37, 30, 24, 19, 15, 11, 9, 6, 5, 4].map((parts) => inch(parts / 32));
+    const recipe = illusion3d({ dark: 'black-walnut', light: 'hard-maple', steps, edgeExtra: inch(6 / 32), shop });
+    const purchase = suggestPurchase(recipe, catalog, { kerf: inch(1 / 8), canPlane: false });
+    expect(purchase.plan.shortfalls).toEqual([]);
+
+    // The plan cuts exactly the boards the shopping list buys.
+    for (const line of purchase.lines) {
+      const copies = purchase.plan.boards
+        .filter((board) => board.stockId === line.board.id)
+        .map((board) => board.copy)
+        .sort((a, b) => a - b);
+      expect(copies, line.board.id).toEqual(Array.from({ length: line.quantity }, (_, index) => index + 1));
+    }
+    expect(purchase.plan.boards).toHaveLength(purchase.lines.reduce((sum, line) => sum + line.quantity, 0));
+    // The narrow maple strips share blanks: far fewer than one blank for each width.
+    expect(summary(purchase)).toContain('4 x wood-vault/hard-maple/blank/1_625x0_75x24');
   });
 });
