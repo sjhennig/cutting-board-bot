@@ -103,27 +103,34 @@ const leanOf = (need: StripNeed): number =>
 const kerfFor = (need: StripNeed, kerf: number): number =>
   need.bevel ? kerf / Math.cos((need.bevel * Math.PI) / 180) : kerf;
 
+/**
+ * A board this close to the thickness wanted is used as it is. 0.15 mm is under 1/128 in.:
+ * less than flattening the glued panel removes, and less than a planer can be trusted to hit.
+ * It lets a 1-1/2 in. (38.1 mm) board supply a 38 mm strip.
+ */
+export const CLOSE_ENOUGH = 0.15;
+
 /** How a strip could be cut from a stock board, or null if it cannot. */
 function fitStrip(need: StripNeed, stock: StockBoard): Fit | null {
   if (stock.species !== need.species || stock.length < need.length - EPS) return null;
 
   if (need.bevel) {
     // Slanted strips lie flat, and the first cut on each board wastes one lean of width.
-    if (stock.thickness < need.thickness - EPS || stock.width < need.width + leanOf(need) - EPS) return null;
+    if (stock.thickness < need.thickness - CLOSE_ENOUGH || stock.width < need.width + leanOf(need) - EPS) return null;
     const fit: Fit = { ripWidth: need.width, orientation: 'flat' };
-    if (stock.thickness > need.thickness + EPS) fit.planeTo = need.thickness;
+    if (stock.thickness > need.thickness + CLOSE_ENOUGH) fit.planeTo = need.thickness;
     return fit;
   }
 
   const fits: Fit[] = [];
-  if (stock.thickness >= need.thickness - EPS) {
+  if (stock.thickness >= need.thickness - CLOSE_ENOUGH) {
     const fit: Fit = { ripWidth: need.width, orientation: 'flat' };
-    if (stock.thickness > need.thickness + EPS) fit.planeTo = need.thickness;
+    if (stock.thickness > need.thickness + CLOSE_ENOUGH) fit.planeTo = need.thickness;
     fits.push(fit);
   }
-  if (stock.thickness >= need.width - EPS) {
+  if (stock.thickness >= need.width - CLOSE_ENOUGH) {
     const fit: Fit = { ripWidth: need.thickness, orientation: 'onEdge' };
-    if (stock.thickness > need.width + EPS) fit.planeTo = need.width;
+    if (stock.thickness > need.width + CLOSE_ENOUGH) fit.planeTo = need.width;
     fits.push(fit);
   }
   // Prefer no planing, then the simpler flat orientation.

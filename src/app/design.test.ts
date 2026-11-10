@@ -89,6 +89,23 @@ describe('makeDesign', () => {
       expect(() => makeDesign({ ...state, stripThickness: inch(0.75) })).toThrow(/Use strips at least 1-5\/16" thick/);
     });
 
+    it('can be bought in millimetres without a planer', () => {
+      // The 38 mm maple edge strips come from a 38.1 mm (1-1/2 in.) board stood on edge.
+      const design = makeDesign({ ...state, unit: 'mm' });
+      expect(design.plan.shortfalls).toEqual([]);
+      expect(design.notices.filter((notice) => notice.level === 'problem')).toEqual([]);
+    });
+
+    it('says when a planer would shorten the shopping list', () => {
+      const without = makeDesign(state);
+      const hint = without.notices.find((notice) => notice.message.includes('With a thickness planer'));
+      expect(hint?.message).toMatch(/has \d+ boards of 5 kinds.*would be 2 boards of 2 kinds/);
+      expect(hint?.message).toContain('strips 1-1/2" thick');
+      const withPlaner = makeDesign({ ...state, canPlane: true, stripThickness: inch(1.5) });
+      expect(withPlaner.purchase).toHaveLength(2);
+      expect(withPlaner.notices.some((notice) => notice.message.includes('With a thickness planer'))).toBe(false);
+    });
+
     it('credits the plan it follows', () => {
       expect(makeDesign(state).notices.some((notice) => notice.message.includes("MTM Wood's published plan"))).toBe(
         true,

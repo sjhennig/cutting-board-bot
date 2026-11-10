@@ -376,6 +376,43 @@ export function makeDesign(state: DesignState): Design {
     const suggestion = suggestPurchase(recipe, woodVaultBoards(), { kerf: state.kerf, canPlane: state.canPlane });
     plan = suggestion.plan;
     purchase = suggestion.lines;
+    // Catalog boards differ in thickness, so without a planer one wood may come from several
+    // products. Say so when a planer, perhaps with slightly thinner strips, gives the same
+    // board from a simpler list.
+    if (!state.canPlane && plan.shortfalls.length === 0 && purchase.length > designSpecies(state).length) {
+      const total = (lines: PurchaseLine[]): number => lines.reduce((sum, line) => sum + line.quantity, 0);
+      const wanted = new Set(recipe.panels.flatMap((panel) => panel.strips.map((strip) => strip.species)));
+      const thicknesses = new Set(
+        woodVaultBoards()
+          .filter((item) => wanted.has(item.species) && item.thickness <= state.stripThickness + 0.01)
+          .map((item) => item.thickness),
+      );
+      let best: { lines: PurchaseLine[]; thickness: number } | null = null;
+      for (const thickness of [...thicknesses].sort((a, b) => b - a)) {
+        try {
+          const other = makeRecipe({ ...state, stripThickness: thickness }).recipe;
+          const result = buildBoard(other);
+          const sameBoard = Math.abs(result.length - board.length) < 1 && Math.abs(result.width - board.width) < 1;
+          if (!sameBoard) continue;
+          const planed = suggestPurchase(other, woodVaultBoards(), { kerf: state.kerf, canPlane: true });
+          if (planed.plan.shortfalls.length > 0) continue;
+          if (planed.lines.length < (best?.lines.length ?? purchase.length)) best = { lines: planed.lines, thickness };
+        } catch {
+          // This thickness does not make the board; try the next.
+        }
+      }
+      if (best) {
+        const thinner = Math.abs(best.thickness - state.stripThickness) > 0.01;
+        notices.push({
+          level: 'caution',
+          message:
+            `This shopping list has ${total(purchase)} boards of ${purchase.length} kinds, because the woods you chose are sold in different thicknesses. ` +
+            `With a thickness planer${thinner ? ` and strips ${show(best.thickness)} thick` : ''} it would be ` +
+            `${total(best.lines)} ${total(best.lines) === 1 ? 'board' : 'boards'} of ${best.lines.length} ${best.lines.length === 1 ? 'kind' : 'kinds'}. ` +
+            `If you have a planer, say so in the first step${thinner ? ' and set the strip thickness in the fourth' : ''}.`,
+        });
+      }
+    }
     for (const species of new Set(plan.shortfalls.map((entry) => entry.species))) {
       const name = speciesById(species)?.name ?? species;
       notices.push({

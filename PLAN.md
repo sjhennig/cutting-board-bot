@@ -237,6 +237,8 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 - **A new build stage, "Rip the slices into pieces",** appears for designs whose slices are cut narrower. The engine now says which pieces come from which slice, not just how many slices are needed.
 - **The 3D illusion board is in the pattern gallery.** It is always square. At 317 mm it uses MTM Wood's widths to the millimetre; other sizes scale them, and in inches every width is rounded to 1/32 in. so the numbers on the cut list are the numbers to set on the saw.
 - **Plaid and framed boards were added** on top of that. Plaid is squares divided by 1/4 in. lines both ways; the cross lines are thin pieces ripped from a second panel. Framed puts a border of the last wood round a plain centre (two woods) or a checkerboard (three). Borders and lines are end grain, as section 4 requires.
+- **Boards within 0.15 mm of the thickness wanted are used as they are.** Without this a 38 mm strip could not come from a 38.1 mm (1-1/2 in.) board unless it was planed.
+- **The designer says when a planer would shorten the shopping list.** Maple and walnut are sold in different thicknesses, so the 3D board in those woods draws maple from four products; with a planer and 1-1/2 in. strips it is two boards.
 - **A purchase planner bug was fixed.** When one board size was the best choice for several strip widths, the cut plan listed those boards several times over and bought one board per width. The first end-to-end test of the 3D board exposed it. No earlier pattern triggered it, because each needed one strip width per wood.
 
 ### Outstanding
@@ -259,8 +261,6 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 **Designer**
 
 - "What is the biggest board I can make from my wood?" With your own boards you set a size and the app says whether it fits; it does not work backwards.
-- The 3D board's shopping list is correct but fiddly with maple and walnut and no planer: thick maple is sold at 1-1/2 in. and walnut at 1-5/8 in., so the maple comes from four different products. With a planer, or with cherry in place of maple, it is two boards. The app could suggest this.
-- In millimetres with no planer, the 3D board's 38 mm maple edge strip cannot be bought: the nearest board is 38.1 mm. A planning tolerance of a fraction of a millimetre would fix it.
 - The cut planner places each strip in the first board with room. For the 3D board that can pair a 5/32 in. piece with a wide one in the same slice, which is awkward to saw. A smarter pairing would help.
 - Animated view of the cut-and-flip step. A still diagram covers it for now.
 - Full instructions print at about ten pages, more for the 3D board. Worth a compact option.
@@ -277,8 +277,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 
 ### Recommended next session
 
-1. **Tidy the 3D board's shopping list** (the three Designer items above about it).
-2. **Tumbling blocks**, the largest remaining piece of new geometry. Read a published build guide first (section 10, item 5).
-3. Share links, so a design can be sent to someone else.
+1. **Tumbling blocks**, the largest remaining piece of new geometry. Read a published build guide first (section 10, item 5).
+2. Share links, so a design can be sent to someone else.
 
 If real-user feedback arrives first, let it reorder this list.

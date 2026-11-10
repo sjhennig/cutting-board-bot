@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildBoard } from './board';
 import { checkDesign } from './checks';
-import { planCuts, ripList, type StockBoard } from './cutplan';
+import { planCuts, planStrips, ripList, type StockBoard } from './cutplan';
 import { checkerboard, defaultShop, illusion3d } from './patterns';
 import { inch } from './units';
 
@@ -132,5 +132,31 @@ describe('checkDesign', () => {
 
   it('flags the narrow strips and slices of the 3D board', () => {
     expect(codes(illusion3d({ dark: 'walnut', light: 'maple' }))).toEqual(['narrow-strip', 'narrow-slice']);
+  });
+});
+
+describe('thickness tolerance', () => {
+  const need = { panel: 'A', species: 'maple', width: 38, thickness: 41, length: 200 };
+  const board = (thickness: number): StockBoard => ({
+    id: 'b',
+    species: 'maple',
+    thickness,
+    width: 100,
+    length: 600,
+    quantity: 1,
+  });
+
+  it('uses a 38.1 mm board for a 38 mm strip without planing', () => {
+    const plan = planStrips([need], [board(38.1)], 3);
+    expect(plan.shortfalls).toEqual([]);
+    const strip = plan.boards[0]!.segments[0]!.strips[0]!;
+    expect(strip.orientation).toBe('onEdge');
+    expect(strip.planeTo).toBeUndefined();
+  });
+
+  it('still planes a board that is 1 mm too thick, and refuses one 1 mm too thin', () => {
+    const thick = planStrips([{ ...need, width: 150 }], [{ ...board(42), width: 200 }], 3);
+    expect(thick.boards[0]!.segments[0]!.strips[0]!.planeTo).toBe(41);
+    expect(planStrips([{ ...need, width: 150 }], [{ ...board(40), width: 200 }], 3).shortfalls).toHaveLength(1);
   });
 });
