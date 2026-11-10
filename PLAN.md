@@ -4,28 +4,31 @@ A browser-based designer that takes the wood a person has (or can buy), lets the
 
 ## 1. How far to trust the research behind this plan
 
-The research was done from an environment whose network blocks most websites. Only github.com pages were read in full. Everything else comes from search-result excerpts or from geometric reasoning.
+The first round of research ran with most websites blocked. A second round, after woodvault.com, mtmwood.com and thewoodwhisperer.com were opened up, read those three sites directly.
 
-| Area | Confidence | What it rests on |
-|---|---|---|
-| Open-source designers (CBDJS, MvRens/CuttingBoard) | High | Repositories read directly |
-| Other designers (CBdesigner, Cutting Board Studio, iOS apps) | Low | Search excerpts only |
-| Slice-based pattern geometry (checkerboard, brick, stripes, chevron) | High | Simple arithmetic, consistent with excerpts |
-| Tumbling blocks geometry | Medium | Trigonometry is sound; build sequence is from excerpts |
-| MTM Wood style 3D boards | Low | Reasoning only; no source confirmed strip widths or sequences |
-| Wood Vault catalog | Medium-low | Search excerpts of woodvault.com; prices may be stale |
-| Build tips | Medium | Reputable sources identified, but pages not read in full |
+| Area                                                                 | Confidence          | What it rests on                                                        |
+| -------------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------- |
+| Wood Vault catalog                                                   | High                | Product listings read directly (November 2026)                          |
+| MTM Wood 3D board method                                             | High for one design | MTM Wood's own free plan, "3D End Grain Cutting Board #1", read in full |
+| Open-source designers (CBDJS, MvRens/CuttingBoard)                   | High                | Repositories read directly                                              |
+| Slice-based pattern geometry (checkerboard, brick, stripes, chevron) | High                | Simple arithmetic, consistent with excerpts                             |
+| Tumbling blocks geometry                                             | Medium              | Trigonometry is sound; build sequence is from search excerpts           |
+| Build tips in the app                                                | High                | Every tip's source page read in full on 9 November 2026                 |
+| cuttingboarddesigner.com                                             | High                | Used directly in a browser                                              |
+| Other designers (CBdesigner, Cutting Board Studio)                   | Low                 | Search excerpts only                                                    |
+| Species hardness figures                                             | Low                 | Recalled, not checked against the Wood Database                         |
 
-Phase 0 below exists to close these gaps before anything is shown to users as fact.
+Phase 0 below closes the remaining gaps before anything is shown to users as fact.
 
 ## 2. What existing tools get wrong
 
-| Tool | What it does well | Where it falls short |
-|---|---|---|
-| CBDJS (web, open source) | Models both glue-ups, accounts for kerf, reports waste | No unit labels, no sideways shift (so no brick pattern), no cut list, no instructions |
-| MvRens/CuttingBoard (web, archived) | Multiple source panels, metric and decimal inches, save to file | No kerf, no cut list, no fractional inches |
-| CBdesigner (Windows, 2008) | Kerf setting, material list, PDF | Windows-only, dated, checkerboard-family patterns only |
-| Cutting Board Studio (web, beta) | Reported 3D preview and yield figures | Unverified; needs a hands-on look in Phase 0 |
+| Tool                                 | What it does well                                                                                                                              | Where it falls short                                                                                                                                                                                                                     |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CBDJS (web, open source)             | Models both glue-ups, accounts for kerf, reports waste                                                                                         | No unit labels, no sideways shift (so no brick pattern), no cut list, no instructions                                                                                                                                                    |
+| MvRens/CuttingBoard (web, archived)  | Multiple source panels, metric and decimal inches, save to file                                                                                | No kerf, no cut list, no fractional inches                                                                                                                                                                                               |
+| CBdesigner (Windows, 2008)           | Kerf setting, material list, PDF                                                                                                               | Windows-only, dated, checkerboard-family patterns only                                                                                                                                                                                   |
+| cuttingboarddesigner.com (web, free) | The strongest competitor: about a dozen patterns including chevron, weave and pinwheel; wood textures; build steps; share links; cost estimate | Pattern is typed as a code ("1W 1M 1W"); starts from abstract numbers, not real boards; wood needed is one slab per species in decimal inches (28.675in); no kerf setting visible; build steps say to plane the finished end grain board |
+| Cutting Board Studio (web, beta)     | Reported 3D preview and yield figures                                                                                                          | Unverified; needs a hands-on look in Phase 0                                                                                                                                                                                             |
 
 The gaps this project targets:
 
@@ -44,23 +47,25 @@ This matters because the preview, the cut list and the instructions are then all
 
 A recipe is a list of generations. Each generation has:
 
-- **Laminate:** an ordered list of strips (species, width), all at one thickness `T` and length `L`.
+- **Laminate:** one or more panels, each an ordered list of strips (species, width) at one thickness `T` and length `L`.
 - **Cut:** slice thickness `t`, kerf `k`, cut angle (90 degrees unless stated).
-- **Arrange:** per slice, any of flip end for end, rotate, shift sideways by a distance.
+- **Arrange:** an ordered list of slices, each naming the panel it came from, plus any of: flip end for end, rotate, shift sideways, or re-rip to a narrower width.
+
+Multiple panels and per-slice re-ripping are needed for the 3D boards (see section 4). Building them into the model from the start avoids a rewrite later.
 
 A pattern is a preset that writes a recipe from a few friendly inputs (target size, species, cell size).
 
 ### Geometry for the slice family
 
-| Quantity | Formula |
-|---|---|
-| Panel width | `W = sum of strip widths` |
-| Slices from a panel | `N = floor((L + k) / (t + k))`, less one or two for squaring the ends |
-| Board length | `W`, less any trim from shifting |
-| Board width | `N x T` |
-| Board thickness | `t` minus flattening allowance (default 1/16 in. per face per glue-up) |
-| Panel length needed for `N` slices | `N(t + k) - k` plus about 1 in. for squaring |
-| Surface cell size | `strip width x T`; square cells need strip width equal to `T` |
+| Quantity                           | Formula                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------- |
+| Panel width                        | `W = sum of strip widths`                                              |
+| Slices from a panel                | `N = floor((L + k) / (t + k))`, less one or two for squaring the ends  |
+| Board length                       | `W`, less any trim from shifting                                       |
+| Board width                        | `N x T`                                                                |
+| Board thickness                    | `t` minus flattening allowance (default 1/16 in. per face per glue-up) |
+| Panel length needed for `N` slices | `N(t + k) - k` plus about 1 in. for squaring                           |
+| Surface cell size                  | `strip width x T`; square cells need strip width equal to `T`          |
 
 Second-generation cuts lose another kerf per cut and another flattening pass, so the pattern repeat shrinks slightly each generation. The engine must carry this through; it is the detail that hand calculations usually miss.
 
@@ -76,21 +81,39 @@ This family does not fit the slice model, so it gets its own small engine.
 
 ## 4. Pattern library
 
-| Pattern | Level | Engine | How it is made |
-|---|---|---|---|
-| Stripes (even or varied width) | Beginner | Slice | No rearranging, or mirror alternate slices |
-| Checkerboard | Beginner | Slice | Two species, even strip count, flip alternate slices |
-| Brick | Beginner | Slice | Shift alternate slices by half a strip; trim the ends |
-| Chaotic | Beginner | Slice | Random strip widths, random shift per slice |
-| Plaid | Intermediate | Slice | Thin accent strips in both generations |
-| Framed | Intermediate | Slice | End grain border blocks only; never long grain |
-| Basket weave | Intermediate | Slice | Square logs of three strips, alternate tiles turned 90 degrees |
-| Chevron / zigzag | Intermediate | Slice, 2 generations | Striped end grain slab re-cut at an angle, alternates flipped |
-| Pixel art | Intermediate | Slice | One panel recipe per distinct row |
-| Tumbling blocks | Advanced | Rhombus | Three tones, hexagonal logs |
-| 3D steps / bulge / weave | Advanced | Slice, 2 generations | Graded strip widths, mirrored or shifted slices |
+| Pattern                        | Level        | Engine            | How it is made                                                                      |
+| ------------------------------ | ------------ | ----------------- | ----------------------------------------------------------------------------------- |
+| Stripes (even or varied width) | Beginner     | Slice             | No rearranging, or mirror alternate slices                                          |
+| Checkerboard                   | Beginner     | Slice             | Two species, even strip count, flip alternate slices                                |
+| Brick                          | Beginner     | Slice             | Shift alternate slices by half a strip; trim the ends                               |
+| Chaotic                        | Beginner     | Slice             | Random strip widths, random shift per slice                                         |
+| Plaid                          | Intermediate | Slice             | Thin accent strips in both generations                                              |
+| Framed                         | Intermediate | Slice             | End grain border blocks only; never long grain                                      |
+| Basket weave                   | Intermediate | Slice             | Square tiles of three strips laid in a grid, alternate tiles turned a quarter turn  |
+| Chevron / zigzag               | Intermediate | Slice             | Strips ripped with the blade tilted 30 degrees; alternate slices turned upside down |
+| Pixel art                      | Intermediate | Slice             | One panel recipe per distinct row                                                   |
+| Tumbling blocks                | Advanced     | Rhombus           | Three tones, hexagonal logs                                                         |
+| 3D illusion (MTM style)        | Advanced     | Slice, two panels | Shrinking strip widths, slices re-ripped to shrinking widths                        |
 
-The 3D row is the least certain. It is scheduled last and depends on Phase 0 confirming the method from real build guides.
+### What Phase 4 changed
+
+The first version of this plan assumed a chevron needs a second glue-up, sawn at an angle. That wastes two large corners of the slab. The better method, and the one cuttingboarddesigner.com uses, is a single glue-up of strips ripped with a tilted blade: each strip then shows as a slanted band on the end grain, and turning alternate slices upside down mirrors the slant into a zigzag. The engine models that, and no second-generation machinery was needed.
+
+Plaid, framed and pixel art boards are not built yet. Plaid and framed need the interface to handle two different panels in one design, which the engine already supports.
+
+### How the 3D illusion board is made (confirmed from MTM Wood's plan)
+
+The effect comes from rectangles that shrink towards the centre in both directions. It is a single-generation board, not a two-generation one as first assumed.
+
+1. Make two panels of light and dark strips. The second is a colour negative of the first.
+2. Strip widths shrink towards the centre and grow again. In MTM's plan, in mm: 38, 29, 24, 19, 15, 12, 9, 7, 5, 4, 3, then back out, alternating tone (21 strips). Each step is roughly three quarters of the last.
+3. Crosscut both panels into slices (42 mm in the plan, which sets board thickness) and turn them end grain up.
+4. Re-rip each slice to a width from the same shrinking sequence: 33, 24, 15, 9, 5, 3 mm from panel one; 29, 19, 12, 7, 4 mm from panel two.
+5. Interleave the slices, alternating panels, in the same shrink-then-grow order, and glue.
+
+Practical notes from the plan: cut strips 1 to 1.5 mm oversize and sand to final size; edge strips are made 5 mm wider and trimmed after glue-up; align by eye on the centre rectangles, because slices slip under clamp pressure and cannot be corrected.
+
+The other 3D variants (steps, weave) are still unconfirmed. MTM sells plans for those; they stay out of scope unless a source is found.
 
 ## 5. User experience
 
@@ -98,9 +121,9 @@ A five-step guided flow, with a live preview visible throughout.
 
 1. **Your shop.** Units (fractional inches or metric), blade kerf (1/8 or 3/32 in.), and which tools the user owns. Tool answers change the instructions later: no jointer means recommending pre-surfaced stock; no drum sander means the router sled route.
 2. **Your wood.** Three ways in:
-   - *Start from a kit:* pick a pre-populated pack and the app fills in the boards.
-   - *I have boards:* enter species and dimensions.
-   - *Tell me what to buy:* skip this step, set a target board size, and get a shopping list at the end.
+   - _Start from a kit:_ pick a pre-populated pack and the app fills in the boards.
+   - _I have boards:_ enter species and dimensions.
+   - _Tell me what to buy:_ skip this step, set a target board size, and get a shopping list at the end.
 3. **Pick a pattern.** A gallery labelled by difficulty. Patterns the user's wood cannot make are shown greyed out with the reason ("needs three contrasting species").
 4. **Tune it.** A few sliders (board size, cell size, species order). The preview shows the first panel, the slices, and the finished board, with an animation of the cut-and-flip step, which is the part beginners find hardest to picture.
 5. **Your plan.** Cut list, optional step-by-step instructions, and a printable version.
@@ -114,17 +137,34 @@ Guard rails run continuously and explain themselves in plain language:
 
 ## 6. Wood sourcing
 
-The Wood Vault (woodvault.com) appears to be an Ottawa-area Canadian retailer. Its range suits pre-populated options well:
+The Wood Vault (woodvault.com) is an Ottawa-area Canadian retailer. Its listings, read directly in November 2026, suit pre-populated options well.
 
-- **Cutting board packs:** 12 strips, 1-5/8 in. thick, 12 or 24 in. long, in domestic (walnut, maple, cherry) and tropical mixes.
-- **Strip blanks:** 1-5/8 in. thick, 24 in. long, in widths from 1/4 to 1-1/4 in.
-- **Surfaced boards:** 1/2, 3/4 and 1-5/8 in. thick; 24, 36 and 47 in. long.
+| Product                | Thickness                              | Width                         | Length         | Species                                                                                                      |
+| ---------------------- | -------------------------------------- | ----------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| Cutting board packs    | 1-5/8 in.                              | makes a 12 in. panel          | 12 or 24 in.   | Hardwood (walnut, maple, cherry); Tropical (padauk, purpleheart, limba); Exotic (sapele, purpleheart, limba) |
+| Cutting board blanks   | 1-5/8 in.                              | 3/4, 1 or 1-1/4 in.           | 24 in.         | Cherry, limba, maple, padauk, purpleheart, sapele, walnut                                                    |
+| Surfaced boards, thick | 1-5/8 in. (maple and poplar 1-1/2 in.) | mostly 5-1/4 in.              | 24, 36, 47 in. | About 30 species                                                                                             |
+| Surfaced boards, thin  | 1/2 or 3/4 in.                         | 3-1/2 to 9-1/4 in. by species | 24, 36, 47 in. | About 45 species                                                                                             |
 
-Approach: a hand-curated catalog file in the repository, not live scraping. Each entry holds species, dimensions and a link to the product page, with no prices.
+Points that affect the design:
 
-Reasons: the site's terms of use have not been read, prices mix two currencies and go stale, and a static file keeps the app free of any server. If the terms allow it, a refresh script can be added later.
+- **Blanks are the natural beginner route.** They arrive ready to glue, so a first board needs no jointer or planer.
+- **Thick maple is 1-1/2 in., while most other species are 1-5/8 in.** Mixing them leaves steps in the panel. The app must warn about this and add a planing step.
+- **Listed dimensions can vary by 1/4 in.** The app should tell users to measure their boards and let them correct the numbers.
+- **47 in. is the longest length that ships.**
+- **Wood Vault sells limba in its own cutting board packs**, although it is softer and more open-pored than ideal. The app flags it with an explanation and does not block it.
 
-Each species also carries a display colour, a hardness figure and a food-suitability flag. The hardness figures need checking against the Wood Database in Phase 0.
+**Catalog approach: a hand-entered file, with nothing fetched from the site.** Wood Vault's terms of service prohibit crawling or scraping. The catalog (`src/data/woodVault.ts`) is built from the project's own Wood Vault reference document, and holds only species, dimensions and the supplier's rules: no prices, descriptions or images. Each line records where it came from.
+
+Three things in the catalog go beyond the reference document, all read from product pages in November 2026:
+
+- **Cutting board blanks.** The reference document covers surfaced boards only.
+- **Hard maple, red oak and white oak widths.** The document inferred 4-3/4 in. and asked for verification; the product pages list 5-1/4, 7-1/4 and 9-1/4 in.
+- **Thick hard maple at 1-1/2 in.**
+
+Cutting board packs are not in the catalog yet, because the width of the strips in a pack is not confirmed.
+
+Each species also carries a display colour, a hardness figure and a food-suitability flag. The hardness figures still need checking against the Wood Database.
 
 ## 7. Outputs
 
@@ -137,13 +177,13 @@ Each species also carries a display colour, a hardness figure and a food-suitabi
 
 **Instructions.** Generated from the recipe, one step per operation, each with a diagram of the workpiece at that point. Tips attach to the step where they apply, each with its source link. Examples:
 
-- Flatten end grain with a router sled or drum sander, not a thickness planer.
+- Flatten end grain with a router sled or drum sander, not a thickness planer. (Confirmed: the Wood Whisperer article and its readers report kickback, shattered blades and destroyed boards.)
 - Use a crosscut sled with a stop block; never the rip fence and miter gauge together.
 - Titebond III gives roughly twice the open time of Titebond II; glue large boards in sub-assemblies.
 - Sand through the grits to 220; finish with mineral oil, then oil and beeswax.
 - A care card to hand over with a gifted board.
 
-Where sources disagree (planing with sacrificial strips, raising the grain, finish choice), the app says so instead of picking a side silently.
+Where sources disagree, the app says so instead of picking a side silently. Planing is the clearest case: MTM Wood does plane end grain, with sacrificial rails and passes of 0.3 to 0.5 mm, while the Wood Whisperer advises never doing it. The app recommends the sled or sander and presents planing as an expert-only option with those precautions.
 
 ## 8. Technical approach
 
@@ -155,22 +195,81 @@ Where sources disagree (planing with sacrificial strips, raising the grain, fini
 
 ## 9. Phases
 
-| Phase | Delivers | Done when |
-|---|---|---|
-| 0. Verify | Research gaps closed (see section 10) | Each low-confidence row in section 1 is confirmed or the feature is cut |
-| 1. Engine | Recipe model, slice geometry, cut list data, tests | Hand-checked checkerboard and brick designs match to 1/64 in. |
-| 2. First usable version | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided |
-| 3. Instructions | Step-by-step guide, sourced tips, print layout | Every step has a diagram; every tip has a checked link |
-| 4. Intermediate patterns | Second-generation and angled cuts | Chevron and basket weave render and produce correct cut lists |
-| 5. Advanced patterns | Rhombus engine, tumbling blocks, 3D boards | Tumbling blocks verified against a published build |
-| 6. Polish | Grain textures, share links, cost estimate, shopping list | - |
+| Phase                           | Delivers                                                   | Done when                                                                                          |
+| ------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 0. Verify                       | Research gaps closed (see section 10)                      | Each low-confidence row in section 1 is confirmed or the feature is cut                            |
+| 1. Engine (done)                | Recipe model, slice geometry, cut list data, tests         | Hand-checked checkerboard and brick designs match to 1/64 in.                                      |
+| 2. First usable version (done)  | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided                                           |
+| 3. Instructions (done)          | Step-by-step guide, sourced tips, print layout             | Every step has a diagram; every tip has a checked link                                             |
+| 4. Intermediate patterns (done) | Basket weave and chevron                                   | Chevron and basket weave render and produce correct cut lists                                      |
+| 5. Advanced patterns            | Rhombus engine, tumbling blocks, 3D illusion board         | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
+| 6. Polish                       | Grain textures, share links, cost estimate, shopping list  | -                                                                                                  |
 
 Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 
 ## 10. Open items
 
-1. **Network access.** Allow woodvault.com, wood-database.com, mtmwood.com, instructables.com, thewoodwhisperer.com and lumberjocks.com in the environment's network settings so Phase 0 can read sources in full.
-2. **Confirm the supplier.** Is woodvault.com (Canadian) the intended Wood Vault?
-3. **Wood Vault terms of use.** Read before deciding whether the catalog may ever be imported automatically.
-4. **MTM-style 3D boards.** Confirm the real method, or drop them from scope.
-5. **Cutting Board Studio.** Try it by hand; it is the closest modern competitor.
+1. **Sites not yet read.** www.instructables.com and www.lumberjocks.com, for tumbling block build guides; www.thecraftycatsman.com, for the Cutting Board Studio competitor.
+2. **Cutting board packs.** Confirm how many strips of what width each pack contains.
+3. **Competitor to try by hand.** Cutting Board Studio.
+4. **USDA sanitising advice.** The USDA cutting board page refuses automated visits, so its bleach-sanitising advice is not in the app. Read it by hand before adding.
+5. **Tumbling blocks.** Confirm the build sequence against a published guide.
+
+## 11. Status and where to pick up
+
+Written 10 November 2026, at the end of the first working session. Read this section first.
+
+### Completed
+
+| Area                  | What exists                                                                                                                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Geometry engine       | Recipe model, finished size, surface layout, slice counts, full waste breakdown, cut planner, purchase planner, design checks (`src/engine`)           |
+| Patterns in the app   | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron (intermediate)                                                                 |
+| Patterns, engine only | MTM Wood's 3D illusion board: generated and tested against the published plan, but not offered in the interface                                        |
+| Designer              | Five steps: shop, wood, pattern, size, cut list. Buy from the Wood Vault catalog or enter your own boards. Design remembered in the browser            |
+| Outputs               | Cut list in build order; optional full instructions with five diagrams, numbered steps, sanding, oiling and care; print layout for both                |
+| Tips                  | Twenty, each citing a source read in full on 9 November 2026; disagreements between sources are shown                                                  |
+| Data                  | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                 |
+| Project hygiene       | 111 automated tests; formatting, type and test checks on every push (`npm run check`); automatic publishing of `main` to GitHub Pages once switched on |
+
+### Outstanding
+
+**Needs a person**
+
+- Switch on GitHub Pages: Settings, Pages, Source, "GitHub Actions". The site is not live until this is done.
+- Try the designer as a real user and note what is confusing. Nobody but the author has used it yet.
+- Confirm what a Wood Vault cutting board pack contains (how many strips, how wide), so packs can join the catalog.
+- Read the USDA cutting board page by hand if bleach-sanitising advice is wanted in the care card.
+
+**Patterns**
+
+- 3D illusion board in the interface. The engine work is done; the cut list screen assumes one kind of panel and this design has two.
+- Plaid and framed boards. Same blocker as the 3D board, plus small pattern generators.
+- Tumbling blocks. Needs its own geometry (60 degree rhombus sticks in hexagonal logs, section 3) and a published build guide to check against. Not started.
+- Pixel art. Not started.
+- Chevron tilt is fixed at 30 degrees. Its build steps are worked out from geometry and have not been checked against a published guide.
+
+**Designer**
+
+- "What is the biggest board I can make from my wood?" With your own boards you set a size and the app says whether it fits; it does not work backwards.
+- Animated view of the cut-and-flip step. A still diagram covers it for now.
+- Full instructions print at about ten pages. Worth a compact option.
+
+**Polish (Phase 6)**
+
+- Wood grain textures in previews, share links, cost estimate.
+
+**Verification**
+
+- The browser walk-throughs were run by hand and are not in the repository. An automated end-to-end test would catch interface regressions that the unit tests cannot.
+- Species hardness figures were never checked and are not used in the app.
+- Competitors not yet tried: Cutting Board Studio (thecraftycatsman.com).
+
+### Recommended next session
+
+1. **Make the cut list screen handle more than one kind of panel.** This single change unlocks the 3D illusion board, plaid and framed boards, and the 3D board is the closest thing to the original brief's "more complicated 3D patterns". Start in `src/app/PlanStep.tsx` and `src/app/guide.ts`, which both read `recipe.panels[0]`.
+2. **Add the 3D illusion board to the pattern gallery** as the first Advanced pattern, using `illusion3d` in `src/engine/patterns.ts`.
+3. **Add an automated end-to-end test** of the five steps before the interface grows further.
+4. Then tumbling blocks, which is the largest remaining piece of new geometry.
+
+If real-user feedback arrives first, let it reorder this list.
