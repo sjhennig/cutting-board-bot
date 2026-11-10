@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SOURCES_CHECKED, TIPS, type StageId } from '../data/tips';
 import { inch } from '../engine';
-import { defaultState, makeDesign, type DesignState } from './design';
+import { PATTERNS, defaultState, makeDesign, type DesignState } from './design';
 import { buildGuide, needsRipping } from './guide';
 
 const guideFor = (state: DesignState) => buildGuide(state, makeDesign(state));
@@ -105,6 +105,45 @@ describe('buildGuide', () => {
     const guide = guideFor(state);
     expect(guide.find((stage) => stage.id === 'panel')!.steps[0]).toMatch(/^You are making \d+ identical panels/);
     expect(guide.find((stage) => stage.id === 'arrange')!.steps.join(' ')).toContain('quarter turn');
+  });
+
+  it('walks through the two panels and the re-ripping of a 3D illusion board', () => {
+    const pattern = PATTERNS.find((entry) => entry.id === 'illusion3d')!;
+    const guide = guideFor({ ...defaultState, ...pattern.defaults, pattern: 'illusion3d' });
+    expect(guide.map((stage) => stage.id)).toEqual([
+      'wood',
+      'strips',
+      'panel',
+      'slice',
+      'rerip',
+      'arrange',
+      'flatten',
+      'sand',
+      'finish',
+      'care',
+    ]);
+    const steps = (id: StageId): string => guide.find((stage) => stage.id === id)!.steps.join(' ');
+    expect(steps('strips')).toContain('9-1/8" for panel A and 7-3/8" for panel B');
+    expect(steps('panel')).toContain('2 different panels: panel A and panel B');
+    expect(steps('slice')).toContain('Cut 5 slices from panel A and 4 slices from panel B');
+    expect(steps('rerip')).toContain('Set the fence to the widest width');
+    expect(steps('arrange')).toContain('panel A and panel B in turn');
+    expect(steps('flatten')).toContain('Trim both ends square');
+    // Ripping thin pieces from short slices gets the same safety advice as ripping strips.
+    expect(guide.find((stage) => stage.id === 'rerip')!.tips.map((tip) => tip.id)).toEqual([
+      'rip-safely',
+      'oversize-narrow',
+    ]);
+  });
+
+  it('has no re-ripping stage for boards whose slices are used whole', () => {
+    for (const pattern of PATTERNS.filter((entry) => entry.id !== 'illusion3d')) {
+      const guide = guideFor({ ...defaultState, ...pattern.defaults, pattern: pattern.id });
+      expect(
+        guide.some((stage) => stage.id === 'rerip'),
+        pattern.id,
+      ).toBe(false);
+    }
   });
 
   it('describes the trim for a brick board', () => {

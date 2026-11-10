@@ -5,7 +5,8 @@
  * A tip whose source could not be read does not belong here. Where good sources disagree,
  * `otherView` says so instead of hiding it.
  */
-export type StageId = 'wood' | 'strips' | 'panel' | 'slice' | 'arrange' | 'flatten' | 'sand' | 'finish' | 'care';
+export type StageId =
+  'wood' | 'strips' | 'panel' | 'slice' | 'rerip' | 'arrange' | 'flatten' | 'sand' | 'finish' | 'care';
 
 export interface Source {
   name: string;

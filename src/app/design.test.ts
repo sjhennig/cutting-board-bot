@@ -54,6 +54,48 @@ describe('makeDesign', () => {
     );
   });
 
+  describe('3D illusion board', () => {
+    const pattern = PATTERNS.find((entry) => entry.id === 'illusion3d')!;
+    const state: DesignState = { ...defaultState, ...pattern.defaults, pattern: 'illusion3d' };
+
+    it("uses MTM Wood's published sizes exactly when working in millimetres", () => {
+      const design = makeDesign({ ...state, unit: 'mm', canPlane: true });
+      expect(design.board.length).toBeCloseTo(317, 6);
+      expect(design.board.width).toBeCloseTo(317, 6);
+      expect(design.recipe.slices.map((slice) => slice.ripTo).slice(0, 11)).toEqual([
+        33, 29, 24, 19, 15, 12, 9, 7, 5, 4, 3,
+      ]);
+      expect(design.recipe.panels.map((panel) => panel.strips[0]!.width)).toEqual([38, 38]);
+      expect(design.plan.shortfalls).toEqual([]);
+    });
+
+    it('rounds every width to 1/32 in. when working in inches', () => {
+      const design = makeDesign(state);
+      for (const slice of design.recipe.slices) {
+        const parts = slice.ripTo! / inch(1 / 32);
+        expect(parts).toBeCloseTo(Math.round(parts), 6);
+      }
+      expect(design.board.length).toBeCloseTo(design.board.width, 6);
+      expect(design.board.length).toBeCloseTo(inch(12.5), 6);
+    });
+
+    it('scales the widths to the size asked for', () => {
+      const design = makeDesign({ ...state, unit: 'mm', boardLength: 250, canPlane: true });
+      expect(Math.abs(design.board.length - 250)).toBeLessThan(6);
+      expect(design.board.width).toBeCloseTo(design.board.length, 6);
+    });
+
+    it('says what to do when the strips are too thin for the widest piece', () => {
+      expect(() => makeDesign({ ...state, stripThickness: inch(0.75) })).toThrow(/Use strips at least 1-5\/16" thick/);
+    });
+
+    it('credits the plan it follows', () => {
+      expect(makeDesign(state).notices.some((notice) => notice.message.includes("MTM Wood's published plan"))).toBe(
+        true,
+      );
+    });
+  });
+
   it('rounds the requested size to whole pieces', () => {
     const design = makeDesign({ ...defaultState, boardLength: inch(15.4), boardWidth: inch(12.2) });
     expect(design.columns).toBe(12);

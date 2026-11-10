@@ -5,6 +5,7 @@ import { formatLength, inch, type StockBoard } from '../engine';
 import type { Update } from './App';
 import {
   CHEVRON_TILT,
+  ILLUSION_SIDE,
   PATTERNS,
   WEAVE_STRIPS,
   designSpecies,
@@ -336,8 +337,8 @@ export function PatternStep({ state, update }: StepProps) {
     <>
       <h2>Pick a pattern</h2>
       <p className="lead">
-        Beginner patterns need only square cuts. Intermediate ones ask for more care. You can change your mind at any
-        time.
+        Beginner patterns need only square cuts. Intermediate ones ask for more care, and advanced ones for patience and
+        precise work. You can change your mind at any time.
       </p>
       <div className="pattern-grid">
         {PATTERNS.map((pattern) => {
@@ -405,18 +406,30 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
       <fieldset>
         <legend>Finished board</legend>
         <div className="row">
-          <LengthInput
-            label="Length"
-            value={state.boardLength}
-            unit={state.unit}
-            onChange={(boardLength) => update({ boardLength })}
-          />
-          <LengthInput
-            label="Width"
-            value={state.boardWidth}
-            unit={state.unit}
-            onChange={(boardWidth) => update({ boardWidth })}
-          />
+          {info.square ? (
+            <LengthInput
+              label="Length of each side"
+              value={state.boardLength}
+              unit={state.unit}
+              onChange={(boardLength) => update({ boardLength, boardWidth: boardLength })}
+              hint="This board is always square."
+            />
+          ) : (
+            <>
+              <LengthInput
+                label="Length"
+                value={state.boardLength}
+                unit={state.unit}
+                onChange={(boardLength) => update({ boardLength })}
+              />
+              <LengthInput
+                label="Width"
+                value={state.boardWidth}
+                unit={state.unit}
+                onChange={(boardWidth) => update({ boardWidth })}
+              />
+            </>
+          )}
           <LengthInput
             label="Thickness"
             value={state.boardThickness}
@@ -453,9 +466,11 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
             hint={
               state.pattern === 'basketweave'
                 ? `The thickness of your boards. Tiles are square and this wide${design ? `: ${design.columns} by ${design.rows} tiles.` : '.'}`
-                : design
-                  ? `The thickness of your boards. Each row is this deep: ${design.rows} rows.`
-                  : 'The thickness of your boards.'
+                : state.pattern === 'illusion3d'
+                  ? 'The thickness of your boards. It must be at least as much as the widest piece of the pattern.'
+                  : design
+                    ? `The thickness of your boards. Each row is this deep: ${design.rows} rows.`
+                    : 'The thickness of your boards.'
             }
           />
         </div>
@@ -464,6 +479,16 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
           <p className="help">
             Each tile is {WEAVE_STRIPS} strips, so every strip is {show(state.stripThickness / WEAVE_STRIPS)} wide. A
             tile size of 1-1/2 in. works well: its strips can be cut from 1/2 in. boards stood on edge.
+          </p>
+        )}
+        {state.pattern === 'illusion3d' && (
+          <p className="help">
+            The widths come from MTM Wood's published plan, scaled to the size you ask for
+            {design
+              ? `: ${design.columns} pieces each way, from ${show(Math.max(...design.recipe.slices.map((slice) => slice.ripTo ?? 0)))} at the edges to ${show(Math.min(...design.recipe.slices.map((slice) => slice.ripTo ?? 0)))} in the centre.`
+              : '.'}{' '}
+            At {show(ILLUSION_SIDE)} square they are the plan's own
+            {state.unit === 'in' ? ', rounded to the nearest 1/32 in.' : ', to the millimetre.'}
           </p>
         )}
         {state.pattern === 'chevron' && (

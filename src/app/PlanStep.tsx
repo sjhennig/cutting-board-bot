@@ -2,15 +2,16 @@ import type { ReactNode } from 'react';
 import { SOURCES_CHECKED, type StageId, type Tip } from '../data/tips';
 import { WOOD_VAULT } from '../data/woodVault';
 import type { CatalogBoard } from '../data/woodVault';
-import { formatLength, panelWidth, type PlannedBoard } from '../engine';
+import { formatLength, type PlannedBoard } from '../engine';
 import type { Update } from './App';
 import { designSpecies, patternInfo, type Design, type DesignState } from './design';
 import { ArrangeDiagram, FlattenDiagram, StockCutDiagram } from './diagrams';
 import { buildGuide } from './guide';
+import { groupName, panelGroups, reRipRows } from './panels';
 import { BoardPreview, Notices, PanelPreview, Swatch, speciesName } from './parts';
 
 /** The stages that make up the cut list. The rest appear only with full instructions. */
-const CUT_LIST_STAGES: StageId[] = ['wood', 'strips', 'panel', 'slice', 'arrange', 'flatten'];
+const CUT_LIST_STAGES: StageId[] = ['wood', 'strips', 'panel', 'slice', 'rerip', 'arrange', 'flatten'];
 
 function TipCard({ tip }: { tip: Tip }) {
   const links = (sources: Tip['sources']): ReactNode =>
@@ -36,6 +37,13 @@ function TipCard({ tip }: { tip: Tip }) {
 }
 
 const plural = (count: number, word: string): string => `${count} ${word}${count === 1 ? '' : 's'}`;
+/** A list joined with "; ", shown one item to a line. */
+const lines = (text: string): ReactNode => text.split('; ').map((line, index) => <div key={index}>{line}</div>);
+/** A pattern name in the middle of a sentence: "Basket weave" becomes "basket weave", "3D illusion" stays. */
+export const inSentence = (name: string): string => name.replace(/^[A-Z](?=[a-z])/, (letter) => letter.toLowerCase());
+const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
+const list = (items: string[]): string =>
+  items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 
 export function PlanStep({
   state,
@@ -59,14 +67,19 @@ export function PlanStep({
 
   const show = (mm: number): string => formatLength(mm, state.unit);
   const { recipe, board, plan, rips, purchase } = design;
-  const panel = recipe.panels[0]!;
+  // Most designs have one kind of panel. Some have several, each with its own strips and length.
+  const groups = panelGroups(recipe);
+  const several = groups.length > 1;
   const info = patternInfo(state.pattern);
-  const width = panelWidth(panel);
   const slices = recipe.slices.length;
   const panelCount = recipe.panels.length;
   const slicesPerPanel = Math.max(...board.panels.map((report) => report.slicesAvailable));
   const grid = (recipe.columns ?? 1) > 1;
-  const tilt = panel.bevel;
+  const tilt = groups.find((group) => group.panel.bevel !== undefined)?.panel.bevel;
+  const stripLengths = [...new Set(groups.map((group) => show(group.panel.length)))];
+  const reRips = reRipRows(recipe);
+  const reRipped = reRips.length > 0;
+  const width = Math.max(...groups.map((group) => group.width));
   const turnedOver = recipe.slices.some((slice) => slice.over);
   const flipped = recipe.slices.flatMap((slice, index) => (slice.flip ? [index + 1] : []));
   const trimmed = width - board.length > 0.01;
@@ -74,7 +87,20 @@ export function PlanStep({
   const percent = (part: number): string => `${Math.round((part / board.waste.supplied) * 100)}%`;
   const lost = board.waste.supplied - board.waste.board - board.waste.panelLeftover;
 
-  const boardName = (planned: PlannedBoard): string => `${speciesName(planned.species)} board ${planned.copy}`;
+  const sizeOf = (stockId: string): { thickness: number; width: number; length: number } | undefined =>
+    state.woodMode === 'buy'
+      ? purchase.find((line) => line.board.id === stockId)?.board
+      : state.stock.find((item) => item.id === stockId);
+  // When one wood comes in several sizes, the size is part of the board's name.
+  const sizesOf = (species: string): number =>
+    new Set(plan.boards.filter((planned) => planned.species === species).map((planned) => planned.stockId)).size;
+  const woodName = (planned: PlannedBoard): string => {
+    const size = sizeOf(planned.stockId);
+    return sizesOf(planned.species) > 1 && size
+      ? `${speciesName(planned.species)} ${show(size.thickness)} × ${show(size.width)}`
+      : speciesName(planned.species);
+  };
+  const boardName = (planned: PlannedBoard): string => `${woodName(planned)} board ${planned.copy}`;
   const totalBoards = plan.boards.length;
 
   // One row per board, with identical boards merged: "Hard maple boards 1 to 5".
@@ -103,12 +129,26 @@ export function PlanStep({
       .filter((segment) => segment.leftoverWidth > 0.5)
       .map((segment) => `${show(segment.leftoverWidth)} × ${show(segment.length)} strip`);
     if (planned.leftoverLength > 0.5) offcuts.push(`${show(planned.leftoverLength)} off the end`);
+    const tally = (items: string[]): string => {
+      const counts = new Map<string, number>();
+      for (const item of items) counts.set(item, (counts.get(item) ?? 0) + 1);
+      return [...counts].map(([size, count]) => `${count} × ${size}`).join(', ');
+    };
+    const pieceLengths = new Set(planned.segments.map((segment) => show(segment.length)));
     const row = {
       species: planned.species,
-      lengths: `${planned.segments.length} × ${show(panel.length)}`,
+      lengths: tally(planned.segments.map((segment) => show(segment.length))),
       rip: noRip
         ? 'No ripping: already the right width'
-        : [...widths].map(([size, count]) => `${count} × ${size}`).join(', '),
+        : pieceLengths.size > 1
+          ? // Lengths for different panels: say which strips come from which.
+            planned.segments
+              .map(
+                (segment) =>
+                  `${show(segment.length)} piece: ${tally(segment.strips.map((strip) => show(strip.ripWidth)))}`,
+              )
+              .join('; ')
+          : [...widths].map(([size, count]) => `${count} × ${size}`).join(', '),
       offcuts: offcuts.length > 0 ? offcuts.join('; ') : 'Nothing',
     };
     const previous = boardRows[boardRows.length - 1];
@@ -121,7 +161,7 @@ export function PlanStep({
       previous.key.startsWith(`${planned.stockId}-`)
     ) {
       previous.last = planned.copy;
-      previous.name = `${speciesName(planned.species)} boards ${previous.first} ${previous.last - previous.first === 1 ? 'and' : 'to'} ${previous.last} (each)`;
+      previous.name = `${woodName(planned)} boards ${previous.first} ${previous.last - previous.first === 1 ? 'and' : 'to'} ${previous.last} (each)`;
     } else {
       boardRows.push({
         ...row,
@@ -135,14 +175,8 @@ export function PlanStep({
   }
   const oneLengthEach = plan.boards.every((planned) => planned.segments.length === 1);
 
-  const order = panel.strips.map((strip) => `${speciesName(strip.species)} ${show(strip.width)}`);
-
   const guide = state.showGuide;
   const stages = buildGuide(state, design).filter((stage) => guide || CUT_LIST_STAGES.includes(stage.id));
-  const sizeOf = (stockId: string): { width: number; length: number } | undefined =>
-    state.woodMode === 'buy'
-      ? purchase.find((line) => line.board.id === stockId)?.board
-      : state.stock.find((item) => item.id === stockId);
 
   const content: Partial<Record<StageId, ReactNode>> = {
     wood: (
@@ -195,12 +229,23 @@ export function PlanStep({
     ),
     strips: (
       <>
-        <p>
-          Every strip is <strong>{show(panel.length)}</strong> long.{' '}
-          {anyRipping
-            ? 'Cut each board to that length first, then rip it into strips.'
-            : 'Cut each board to that length.'}
-        </p>
+        {stripLengths.length === 1 ? (
+          <p>
+            Every strip is <strong>{stripLengths[0]}</strong> long.{' '}
+            {anyRipping
+              ? 'Cut each board to that length first, then rip it into strips.'
+              : 'Cut each board to that length.'}
+          </p>
+        ) : (
+          <p>
+            The panels are different lengths:{' '}
+            {list(groups.map((group) => `strips for ${groupName(group)} are ${show(group.panel.length)} long`))}.{' '}
+            {anyRipping
+              ? 'Cut each board into those lengths first, then rip each length into the strips listed for it.'
+              : 'Cut each board into those lengths.'}{' '}
+            Keep the strips for each panel in their own stack.
+          </p>
+        )}
         {tilt !== undefined && (
           <p>
             Rip with the blade tilted <strong>{tilt} degrees</strong>, so every strip has slanted sides. The widths
@@ -215,7 +260,7 @@ export function PlanStep({
             longer: the extra just becomes more slices.
           </p>
         )}
-        <table>
+        <table className="cuts">
           <thead>
             <tr>
               <th scope="col">Board</th>
@@ -231,8 +276,8 @@ export function PlanStep({
                   <Swatch species={row.species} /> {row.name}
                 </th>
                 <td>{row.lengths}</td>
-                <td>{row.rip}</td>
-                <td>{row.offcuts}</td>
+                <td>{lines(row.rip)}</td>
+                <td>{lines(row.offcuts)}</td>
               </tr>
             ))}
           </tbody>
@@ -268,6 +313,7 @@ export function PlanStep({
               <tr>
                 <th scope="col">{tilt !== undefined ? 'Strip width' : 'Set fence to'}</th>
                 <th scope="col">Wood</th>
+                {stripLengths.length > 1 && <th scope="col">Strip length</th>}
                 <th scope="col">Strips</th>
               </tr>
             </thead>
@@ -278,6 +324,7 @@ export function PlanStep({
                   <td>
                     <Swatch species={line.species} /> {speciesName(line.species)}
                   </td>
+                  {stripLengths.length > 1 && <td>{show(line.length)}</td>}
                   <td className="count">{line.count}</td>
                 </tr>
               ))}
@@ -288,37 +335,106 @@ export function PlanStep({
     ),
     panel: (
       <>
-        <p>
-          {panelCount > 1 && `Make ${panelCount} identical panels. For each one, lay `}
-          {panelCount === 1 && 'Lay '}
-          out {plural(panel.strips.length, 'strip')} side by side in this order and glue them edge to edge.
-          {tilt !== undefined &&
-            ' All the slants must lean the same way, with the two square edges on the outside.'}{' '}
-          {panelCount > 1 ? 'Each panel' : 'The panel'} will be <strong>{show(width)}</strong> wide,{' '}
-          {show(panel.thickness)} thick and {show(panel.length)} long.
-        </p>
-        <ol className="strip-order">
-          {order.map((label, index) => (
-            <li key={index}>
-              <Swatch species={panel.strips[index]!.species} /> {label}
-            </li>
-          ))}
-        </ol>
+        {several && (
+          <p>
+            Make {groups.length} different panels: {list(groups.map(groupName))}. Each has its own strip order.
+          </p>
+        )}
+        {groups.map((group, groupIndex) => {
+          const copies = group.ids.length;
+          const first = groups[0]!.panel.strips;
+          const swapped =
+            groupIndex > 0 &&
+            group.panel.strips.length === first.length &&
+            group.panel.strips.every(
+              (strip, index) => strip.width === first[index]!.width && strip.species !== first[index]!.species,
+            );
+          return (
+            <div key={group.ids[0]} className="panel-group">
+              {several && <h4>{capital(groupName(group))}</h4>}
+              <p>
+                {copies > 1 && `Make ${copies} identical panels. For each one, lay `}
+                {copies === 1 && 'Lay '}
+                out {plural(group.panel.strips.length, 'strip')} side by side in this order and glue them edge to edge.
+                {group.panel.bevel !== undefined &&
+                  ' All the slants must lean the same way, with the two square edges on the outside.'}{' '}
+                {copies > 1 ? 'Each panel' : 'The panel'} will be <strong>{show(group.width)}</strong> wide,{' '}
+                {show(group.panel.thickness)} thick and {show(group.panel.length)} long.
+                {swapped && ` The widths are the same as ${groupName(groups[0]!)}, with the two woods swapped.`}
+              </p>
+              <ol className="strip-order">
+                {group.panel.strips.map((strip, index) => (
+                  <li key={index}>
+                    <Swatch species={strip.species} /> {speciesName(strip.species)} {show(strip.width)}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          );
+        })}
       </>
     ),
     slice: (
       <>
-        <p>
-          {panelCount > 1
-            ? `Square one end of each panel, then crosscut each into ${plural(slicesPerPanel, 'slice')}. You need `
-            : 'Square one end of the panel, then crosscut it into '}
-          <strong>{plural(slices, 'slice')}</strong>
-          {panelCount > 1 && ' in all'}, each <strong>{show(recipe.cut.sliceThickness)}</strong> thick. Use a crosscut
-          sled with a stop block so every slice is identical. Number the slices in order as they come off the saw.
-        </p>
+        {several || reRipped ? (
+          <p>
+            Square one end of {panelCount > 1 ? 'each panel' : 'the panel'}, then crosscut{' '}
+            <strong>
+              {list(
+                groups.map(
+                  (group) =>
+                    `${several ? groupName(group) : 'it'} into ${plural(group.slicesEach, 'slice')}${group.ids.length > 1 ? ' each' : ''}`,
+                ),
+              )}
+            </strong>
+            , each <strong>{show(recipe.cut.sliceThickness)}</strong> thick. Use a crosscut sled with a stop block so
+            every slice is identical.{several && ' Write the letter of its panel on each slice.'}
+          </p>
+        ) : (
+          <p>
+            {panelCount > 1
+              ? `Square one end of each panel, then crosscut each into ${plural(slicesPerPanel, 'slice')}. You need `
+              : 'Square one end of the panel, then crosscut it into '}
+            <strong>{plural(slices, 'slice')}</strong>
+            {panelCount > 1 && ' in all'}, each <strong>{show(recipe.cut.sliceThickness)}</strong> thick. Use a crosscut
+            sled with a stop block so every slice is identical. Number the slices in order as they come off the saw.
+          </p>
+        )}
         <p className="help">
           The slices are cut {show(recipe.flattenPerFace * 2)} thicker than the finished board to leave room for
           flattening.
+        </p>
+      </>
+    ),
+    rerip: (
+      <>
+        <p>
+          Rip each slice along its length into narrower pieces, as listed. That makes the{' '}
+          <strong>{plural(slices, 'piece')}</strong> of the board. Set the fence once for each width and cut every piece
+          of that width before moving it.
+        </p>
+        <table className="fence">
+          <caption>Pieces to rip from each slice</caption>
+          <thead>
+            <tr>
+              {several && <th scope="col">From</th>}
+              <th scope="col">Slices</th>
+              <th scope="col">Rip each into</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reRips.map((row, index) => (
+              <tr key={index}>
+                {several && <td>Panel {row.panel}</td>}
+                <td className="count">{row.slices}</td>
+                <td>{row.widths.map(show).join(', ')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="help">
+          Write {several ? 'the panel letter and ' : ''}the width on each piece as you cut it. They are hard to tell
+          apart later.
         </p>
       </>
     ),
@@ -327,15 +443,27 @@ export function PlanStep({
         <p>
           {grid
             ? 'Stand each tile so the end grain faces up.'
-            : 'Roll each slice a quarter turn so the end grain faces up.'}{' '}
+            : reRipped
+              ? 'Stand each piece so the end grain faces up.'
+              : 'Roll each slice a quarter turn so the end grain faces up.'}{' '}
           {info.arrange}
           {flipped.length > 0 && state.pattern === 'chaotic' && ` Slices to turn: ${flipped.join(', ')}.`}
         </p>
         <p>
           {grid
             ? 'Check the pattern against the picture. Glue the tiles of each row together first, then glue the rows to each other.'
-            : 'Check the pattern against the picture, then glue the slices together.'}
+            : `Check the pattern against the picture, then glue the ${reRipped ? 'pieces' : 'slices'} together.`}
         </p>
+        {reRipped && (
+          <ol className="strip-order">
+            {recipe.slices.map((slice, index) => (
+              <li key={index}>
+                {several && `Panel ${slice.panel}, `}
+                {show(slice.ripTo ?? groups.find((group) => group.ids.includes(slice.panel))!.panel.thickness)}
+              </li>
+            ))}
+          </ol>
+        )}
       </>
     ),
     flatten: (
@@ -355,6 +483,21 @@ export function PlanStep({
       </>
     ),
   };
+
+  // One picture for each kind of panel, labelled when there is more than one.
+  const panelPictures = (cuts: boolean): ReactNode =>
+    several ? (
+      <div className="stock-cuts">
+        {groups.map((group) => (
+          <div key={group.ids[0]}>
+            <PanelPreview recipe={recipe} panelIndex={group.index} cuts={cuts} />
+            <span>{capital(groupName(group))}</span>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <PanelPreview recipe={recipe} cuts={cuts} />
+    );
 
   const diagrams: Partial<Record<StageId, { picture: ReactNode; caption: string }>> = {
     strips: {
@@ -380,21 +523,28 @@ export function PlanStep({
       caption: 'Each board from above. Coloured areas are strips; hatched areas are left over.',
     },
     panel: {
-      picture: <PanelPreview recipe={recipe} cuts={false} />,
-      caption: 'The glued panel from above. Strip 1 is at the top.',
+      picture: panelPictures(false),
+      caption: several
+        ? 'Each glued panel from above. Strip 1 is at the top.'
+        : 'The glued panel from above. Strip 1 is at the top.',
     },
     slice: {
-      picture: <PanelPreview recipe={recipe} />,
+      picture: panelPictures(true),
       caption: 'Dashed lines are the crosscuts. The first cut squares the end.',
     },
     arrange: {
       picture: (
-        <ArrangeDiagram recipe={recipe} label={`The ${slices} slices in order, end grain up. ${info.arrange}`} />
+        <ArrangeDiagram
+          recipe={recipe}
+          showPanels={several}
+          label={`The ${slices} ${reRipped ? 'pieces' : 'slices'} in order, end grain up. ${info.arrange}`}
+        />
       ),
       caption:
         (grid
           ? 'The tiles in position, end grain up, before they are pushed together.'
-          : 'The slices in order, end grain up, before they are pushed together.') +
+          : `The ${reRipped ? 'pieces' : 'slices'} in order, end grain up, before they are pushed together.`) +
+        (several ? ' The letter is the panel each piece is cut from.' : '') +
         (flipped.length > 0 ? ' ⇄ marks a slice turned end for end.' : '') +
         (turnedOver ? ' ⇅ marks a slice turned upside down.' : '') +
         (trimmed ? ' Dashed lines show where the ends are trimmed.' : ''),
@@ -416,7 +566,7 @@ export function PlanStep({
     <div className="plan">
       <h2>{guide ? 'Your build instructions' : 'Your cut list'}</h2>
       <p className="lead">
-        A {info.name.toLowerCase()} board in {designSpecies(state).map(speciesName).join(' and ')}, finishing at{' '}
+        A {inSentence(info.name)} board in {designSpecies(state).map(speciesName).join(' and ')}, finishing at{' '}
         <strong>
           {show(board.length)} × {show(board.width)} × {show(board.thickness)} thick
         </strong>
@@ -445,12 +595,17 @@ export function PlanStep({
       )}
 
       <div className="plan-previews">
-        {!guide && (
-          <figure>
-            <PanelPreview recipe={recipe} />
-            <figcaption>First glue-up, with the slices marked</figcaption>
-          </figure>
-        )}
+        {!guide &&
+          groups.map((group) => (
+            <figure key={group.ids[0]}>
+              <PanelPreview recipe={recipe} panelIndex={group.index} />
+              <figcaption>
+                {several
+                  ? `${capital(groupName(group))}, with the slices marked`
+                  : 'First glue-up, with the slices marked'}
+              </figcaption>
+            </figure>
+          ))}
         <figure>
           <BoardPreview board={board} label="The finished board" />
           <figcaption>Finished board</figcaption>

@@ -853,3 +853,25 @@ svg.diagram text {
   background: var(--caution-soft);
   color: var(--caution);
 }
+
+.level.advanced {
+  background: #e9e6f5;
+  color: #44357a;
+}
+
+.panel-group + .panel-group {
+  margin-top: 18px;
+}
+
+/* The cut table: long lists of rips and offcuts wrap, one item to a line. */
+.plan table.cuts td {
+  white-space: normal;
+}
+
+.plan table.cuts td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.plan table.cuts td:nth-child(4) {
+  min-width: 11em;
+}

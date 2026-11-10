@@ -27,21 +27,31 @@ export function lengthForSlices(count: number, sliceThickness: number, kerf: num
 }
 
 /**
- * How many pieces of width `binWidth` are needed to rip out all of `widths`,
- * losing one kerf between neighbouring rips. First-fit, widest first.
+ * Decide which of `widths` are ripped out of each piece of width `binWidth`, losing one
+ * kerf between neighbouring rips. First-fit, widest first. Returns, for each piece used,
+ * the positions in `widths` of what is cut from it.
  */
-export function packWidths(widths: number[], binWidth: number, kerf: number): number {
+export function packPieces(widths: number[], binWidth: number, kerf: number): number[][] {
+  const bins: number[][] = [];
   const remaining: number[] = [];
-  for (const width of [...widths].sort((a, b) => b - a)) {
-    const bin = remaining.findIndex((space) => space >= width - EPS);
+  const order = widths.map((_, index) => index).sort((a, b) => (widths[b] as number) - (widths[a] as number));
+  for (const index of order) {
+    const width = widths[index] as number;
+    let bin = remaining.findIndex((space) => space >= width - EPS);
     if (bin === -1) {
-      remaining.push(binWidth - width - kerf);
-    } else {
-      remaining[bin] = (remaining[bin] ?? 0) - width - kerf;
+      bin = bins.length;
+      bins.push([]);
+      remaining.push(binWidth);
     }
+    (bins[bin] as number[]).push(index);
+    remaining[bin] = (remaining[bin] as number) - width - kerf;
   }
-  return remaining.length;
+  return bins;
 }
+
+/** How many pieces of width `binWidth` are needed to rip out all of `widths`. */
+export const packWidths = (widths: number[], binWidth: number, kerf: number): number =>
+  packPieces(widths, binWidth, kerf).length;
 
 const sliceHeight = (slice: SliceSpec, panel: Panel): number => slice.ripTo ?? panel.thickness;
 
@@ -210,6 +220,35 @@ export function slicesNeededFrom(panel: Panel, recipe: Recipe): number {
     panel.thickness,
     recipe.cut.kerf,
   );
+}
+
+/** One crosscut slice of a panel, and the narrower pieces it is ripped into. */
+export interface SliceRips {
+  /** The pieces cut from this slice, widest first, as positions in `Recipe.slices`. */
+  pieces: number[];
+  /** The width of each piece. */
+  widths: number[];
+  /** Width of the slice left over once the pieces are cut. */
+  offcut: number;
+}
+
+/**
+ * How each slice of a panel is ripped into narrower pieces, or null when the panel's
+ * slices are used whole. Matches `slicesNeededFrom`: one entry for each slice.
+ */
+export function reRipPlan(panel: Panel, recipe: Recipe): SliceRips[] | null {
+  const mine = recipe.slices.flatMap((slice, index) => (slice.panel === panel.id ? [{ slice, index }] : []));
+  if (mine.every(({ slice }) => slice.ripTo === undefined)) return null;
+  const heights = mine.map(({ slice }) => sliceHeight(slice, panel));
+  return packPieces(heights, panel.thickness, recipe.cut.kerf).map((bin) => {
+    const widths = bin.map((position) => heights[position] as number);
+    const used = widths.reduce((sum, width) => sum + width, 0) + widths.length * recipe.cut.kerf;
+    return {
+      pieces: bin.map((position) => (mine[position] as { index: number }).index),
+      widths,
+      offcut: Math.max(0, panel.thickness - used),
+    };
+  });
 }
 
 /** A copy of the recipe with each panel exactly long enough for the slices it must yield. */

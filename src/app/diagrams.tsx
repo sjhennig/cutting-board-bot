@@ -62,14 +62,23 @@ export function StockCutDiagram(props: {
 }
 
 /** The slices laid out end grain up, in glue-up order, before they are pushed together. */
-export function ArrangeDiagram({ recipe, label }: { recipe: Recipe; label: string }) {
+export function ArrangeDiagram({
+  recipe,
+  label,
+  showPanels = false,
+}: {
+  recipe: Recipe;
+  label: string;
+  /** Mark each piece with the letter of the panel it is cut from. */
+  showPanels?: boolean;
+}) {
   const pieces = layoutPieces(recipe);
   const grid = (recipe.columns ?? 1) > 1;
   const average = pieces.reduce((sum, piece) => sum + piece.height, 0) / pieces.length;
   const gap = average * (grid ? 0.18 : 0.35);
   const text = Math.max(average * 0.55, 6);
   const margin = grid ? 0 : text * 2.2;
-  const marked = pieces.some((piece) => piece.flipped || piece.over);
+  const marked = showPanels || pieces.some((piece) => piece.flipped || piece.over);
 
   const minX = Math.min(...pieces.map((piece) => piece.x));
   const maxX = Math.max(...pieces.map((piece) => piece.x + piece.width + (grid ? piece.column * gap : 0)));
@@ -124,9 +133,10 @@ export function ArrangeDiagram({ recipe, label }: { recipe: Recipe; label: strin
                 />
               ),
             )}
-            {(piece.flipped || piece.over) && (
+            {(showPanels || piece.flipped || piece.over) && (
               <text x={maxX + margin * 0.25} y={piece.y + piece.height / 2} fontSize={text} dominantBaseline="central">
-                {piece.over ? '⇅' : '⇄'}
+                {showPanels && recipe.slices[piece.slice]?.panel}
+                {piece.over ? '⇅' : piece.flipped ? '⇄' : ''}
               </text>
             )}
           </g>

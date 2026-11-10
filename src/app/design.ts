@@ -8,7 +8,9 @@ import {
   checkDesign,
   checkerboard,
   chevron,
+  illusion3d,
   inch,
+  MTM_3D_STEPS,
   planCuts,
   ripList,
   stripes,
@@ -24,21 +26,28 @@ import {
   type Unit,
 } from '../engine';
 
-export type PatternId = 'checkerboard' | 'brick' | 'stripes' | 'chaotic' | 'basketweave' | 'chevron';
+export type PatternId = 'checkerboard' | 'brick' | 'stripes' | 'chaotic' | 'basketweave' | 'chevron' | 'illusion3d';
 
 export interface PatternInfo {
   id: PatternId;
   name: string;
   blurb: string;
-  level: 'Beginner' | 'Intermediate';
+  level: 'Beginner' | 'Intermediate' | 'Advanced';
   minSpecies: number;
   /** What the "cell width" setting is called for this pattern, or null if the pattern does not use it. */
   cellLabel: string | null;
+  /** True when the board is always square, so only one size is asked for. */
+  square?: boolean;
   /** Settings that suit this pattern, applied when it is chosen. */
   defaults?: Partial<DesignState>;
   /** What to do with the slices before the second glue-up. */
   arrange: string;
 }
+
+/** Side of MTM Wood's 3D board: its step widths out to the centre and back. */
+export const ILLUSION_SIDE = 2 * MTM_3D_STEPS.reduce((sum, step) => sum + step, 0) - (MTM_3D_STEPS.at(-1) as number);
+/** Extra width on the two edge strips of a 3D board, trimmed off after glue-up. */
+const ILLUSION_EDGE_EXTRA = 5;
 
 export const PATTERNS: PatternInfo[] = [
   {
@@ -99,6 +108,19 @@ export const PATTERNS: PatternInfo[] = [
     // 3/4 in. boards come in every wood at the same thickness, so nothing needs planing.
     defaults: { cellWidth: inch(1), stripThickness: inch(0.75) },
     arrange: 'Turn every second slice upside down. This mirrors its slant, so the bands zigzag and meet at each joint.',
+  },
+  {
+    id: 'illusion3d',
+    name: '3D illusion',
+    blurb: 'Rectangles that shrink towards the centre, so the flat board seems to bulge. Many thin, precise pieces.',
+    level: 'Advanced',
+    minSpecies: 2,
+    cellLabel: null,
+    square: true,
+    // The size of MTM Wood's published board, so its widths are used unchanged.
+    defaults: { boardLength: ILLUSION_SIDE, boardWidth: ILLUSION_SIDE, stripThickness: inch(1.625) },
+    arrange:
+      'Lay the pieces out in the order shown, taking them from panel A and panel B in turn: widest at the two edges, narrowest in the centre. Every piece sits the same way round.',
   },
 ];
 
@@ -191,7 +213,7 @@ export function makeRecipe(state: DesignState): { recipe: Recipe; columns: numbe
     throw new Error(
       species.length === 0
         ? 'Choose at least one wood to see your board.'
-        : `A ${info.name.toLowerCase()} board needs at least ${info.minSpecies} woods. Add another wood, or pick a different pattern.`,
+        : `A ${info.name.replace(/^[A-Z](?=[a-z])/, (letter) => letter.toLowerCase())} board needs at least ${info.minSpecies} woods. Add another wood, or pick a different pattern.`,
     );
   }
   if (state.cellWidth <= 0 || state.stripThickness <= 0 || state.boardThickness <= 0) {
@@ -258,6 +280,30 @@ export function makeRecipe(state: DesignState): { recipe: Recipe; columns: numbe
         columns,
         rows,
       };
+    }
+    case 'illusion3d': {
+      // MTM Wood's widths, scaled to the size asked for and rounded to marks on a ruler.
+      const grid = state.unit === 'in' ? inch(1 / 32) : 0.5;
+      const snap = (mm: number): number => Math.max(grid, Math.round(mm / grid) * grid);
+      const scale = state.boardLength / ILLUSION_SIDE;
+      const steps = MTM_3D_STEPS.map((step) => snap(step * scale));
+      const widest = Math.max(...steps);
+      if (state.stripThickness < widest - 0.01) {
+        const show = (mm: number): string => formatLength(mm, state.unit);
+        throw new Error(
+          `A 3D illusion board this size has pieces ${show(widest)} wide, which are cut from the thickness of the strips. ` +
+            `Use strips at least ${show(widest)} thick, or make the board smaller.`,
+        );
+      }
+      const recipe = illusion3d({
+        dark: species[0] as string,
+        light: species[1] as string,
+        steps,
+        edgeExtra: snap(ILLUSION_EDGE_EXTRA),
+        shop,
+      });
+      const across = recipe.slices.length;
+      return { recipe, columns: across, rows: across };
     }
     case 'chaotic': {
       const recipe = chaotic({
@@ -338,6 +384,18 @@ export function makeDesign(state: DesignState): Design {
         `Each tile must be exactly square: its ${WEAVE_STRIPS} strips together must measure the same as the ` +
         'thickness of your boards. Measure a glued panel before slicing it, and trim it square if needed.',
     });
+  }
+
+  if (state.pattern === 'illusion3d') {
+    notices.push({
+      level: 'caution',
+      message:
+        "The sizes follow MTM Wood's published plan for this board. The order of work is theirs; the detail of each " +
+        'step here is worked out from the geometry. Make a test cut before each new fence setting.',
+    });
+    if (designSpecies(state).length > 2) {
+      notices.push({ level: 'caution', message: 'This pattern uses only the first two woods in your list.' });
+    }
   }
 
   for (const planned of plan.boards) {
