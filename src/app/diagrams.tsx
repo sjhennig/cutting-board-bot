@@ -1,4 +1,4 @@
-import { layoutPieces, type PlannedBoard, type Recipe } from '../engine';
+import { layoutPieces, type Cell, type PlannedBoard, type Recipe, type TumblingResult } from '../engine';
 import { speciesColor } from './parts';
 
 const OUTLINE = { stroke: 'rgba(0,0,0,0.25)', strokeWidth: 0.5 };
@@ -62,14 +62,23 @@ export function StockCutDiagram(props: {
 }
 
 /** The slices laid out end grain up, in glue-up order, before they are pushed together. */
-export function ArrangeDiagram({ recipe, label }: { recipe: Recipe; label: string }) {
+export function ArrangeDiagram({
+  recipe,
+  label,
+  showPanels = false,
+}: {
+  recipe: Recipe;
+  label: string;
+  /** Mark each piece with the letter of the panel it is cut from. */
+  showPanels?: boolean;
+}) {
   const pieces = layoutPieces(recipe);
   const grid = (recipe.columns ?? 1) > 1;
   const average = pieces.reduce((sum, piece) => sum + piece.height, 0) / pieces.length;
   const gap = average * (grid ? 0.18 : 0.35);
   const text = Math.max(average * 0.55, 6);
   const margin = grid ? 0 : text * 2.2;
-  const marked = pieces.some((piece) => piece.flipped || piece.over);
+  const marked = showPanels || pieces.some((piece) => piece.flipped || piece.over);
 
   const minX = Math.min(...pieces.map((piece) => piece.x));
   const maxX = Math.max(...pieces.map((piece) => piece.x + piece.width + (grid ? piece.column * gap : 0)));
@@ -124,9 +133,10 @@ export function ArrangeDiagram({ recipe, label }: { recipe: Recipe; label: strin
                 />
               ),
             )}
-            {(piece.flipped || piece.over) && (
+            {(showPanels || piece.flipped || piece.over) && (
               <text x={maxX + margin * 0.25} y={piece.y + piece.height / 2} fontSize={text} dominantBaseline="central">
-                {piece.over ? '⇅' : '⇄'}
+                {showPanels && recipe.slices[piece.slice]?.panel}
+                {piece.over ? '⇅' : piece.flipped ? '⇄' : ''}
               </text>
             )}
           </g>
@@ -155,6 +165,62 @@ export function FlattenDiagram(props: { length: number; sliceThickness: number; 
       <rect x={0} y={0} width={length} height={height} fill="#d9c7a6" {...OUTLINE} />
       <rect x={0} y={0} width={length} height={layer} fill="url(#hatch-flatten)" {...OUTLINE} />
       <rect x={0} y={height - layer} width={length} height={layer} fill="url(#hatch-flatten)" {...OUTLINE} />
+    </svg>
+  );
+}
+
+const polygon = (cell: Cell, key: number) => (
+  <polygon
+    key={key}
+    points={(cell.points ?? []).map(([x, y]) => `${x},${y}`).join(' ')}
+    fill={speciesColor(cell.species)}
+    {...OUTLINE}
+  />
+);
+
+/** The end of a six-sided log: three diamond sticks, one of each wood. */
+export function LogDiagram({ tumbling, label }: { tumbling: TumblingResult; label: string }) {
+  const whole = tumbling.layout.find((puck) => !puck.half);
+  if (!whole) return null;
+  const { side, acrossFlats } = tumbling;
+  const left = Math.min(...whole.cells.map((cell) => cell.x));
+  const top = Math.min(...whole.cells.map((cell) => cell.y));
+  const pad = side * 0.15;
+  return (
+    <svg
+      className="diagram log"
+      viewBox={`${left - pad} ${top - pad} ${acrossFlats + pad * 2} ${side * 2 + pad * 2}`}
+      role="img"
+      aria-label={label}
+    >
+      {whole.cells.map(polygon)}
+    </svg>
+  );
+}
+
+/** The pucks laid out like a honeycomb, with the lines the glued board is trimmed to. */
+export function HoneycombDiagram({ tumbling, label }: { tumbling: TumblingResult; label: string }) {
+  const { layout, trim, side } = tumbling;
+  const cells = layout.flatMap((puck) => puck.cells);
+  const right = Math.max(...cells.map((cell) => cell.x + cell.width));
+  const bottom = Math.max(...cells.map((cell) => cell.y + cell.height));
+  const pad = side * 0.3;
+  return (
+    <svg
+      className="diagram honeycomb"
+      viewBox={`${-pad} ${-pad} ${right + pad * 2} ${bottom + pad * 2}`}
+      role="img"
+      aria-label={label}
+    >
+      {cells.map(polygon)}
+      <rect
+        className="cut-line"
+        fill="none"
+        x={trim.left}
+        y={trim.top}
+        width={trim.right - trim.left}
+        height={trim.bottom - trim.top}
+      />
     </svg>
   );
 }

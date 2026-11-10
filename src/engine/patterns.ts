@@ -304,3 +304,106 @@ export function chevron(options: {
     panels: recipe.panels.map((panel) => ({ ...panel, bevel: options.bevel ?? 30 })),
   });
 }
+
+/**
+ * Plaid. Squares of one wood divided by thin lines of another, running both ways.
+ *
+ * Panel A has wide strips of the main wood with thin line strips between them; its slices
+ * are the rows of squares. Panel B has the same widths in the line wood, with thin strips
+ * of the crossing wood; its slices are re-ripped to the line width and laid between the rows.
+ */
+export function plaid(options: {
+  /** The squares, then the lines, then the small squares where lines cross (the main wood if not given). */
+  species: string[];
+  columns: number;
+  rows: number;
+  cellWidth: number;
+  /** Width of the thin lines, in both directions. */
+  lineWidth: number;
+  shop?: Shop;
+}): Recipe {
+  const { species, columns, rows, cellWidth, lineWidth } = options;
+  requireSpecies(species, 2, 'plaid');
+  requireCount(columns, 'Columns');
+  requireCount(rows, 'Rows');
+  const shop = options.shop ?? defaultShop;
+  if (lineWidth <= 0 || lineWidth > shop.panelThickness) {
+    throw new Error('The lines of a plaid must be narrower than the strips are thick.');
+  }
+  const [main, line, crossing = main] = species as [string, string, string?];
+
+  const stripsFor = (wide: string, thin: string): Strip[] =>
+    times(2 * columns - 1, (index) =>
+      index % 2 === 0 ? { species: wide, width: cellWidth } : { species: thin, width: lineWidth },
+    );
+  const slices: SliceSpec[] = times(2 * rows - 1, (index) =>
+    index % 2 === 0 ? { panel: 'A' } : { panel: 'B', ripTo: lineWidth },
+  );
+  const panels: Panel[] = [{ id: 'A', strips: stripsFor(main, line), thickness: shop.panelThickness, length: 0 }];
+  // A board one row deep has no lines across it, and so no second panel.
+  if (rows > 1) panels.push({ id: 'B', strips: stripsFor(line, crossing), thickness: shop.panelThickness, length: 0 });
+
+  return sizePanels({
+    panels,
+    cut: { sliceThickness: shop.sliceThickness, kerf: shop.kerf, endTrim: shop.endTrim },
+    slices,
+    flattenPerFace: shop.flattenPerFace,
+  });
+}
+
+/**
+ * Framed. A centre field with a border of another wood, all of it end grain.
+ *
+ * Panel A is the centre strips with a border strip at each side. Panel B is border wood
+ * right across; one piece of it goes at the top and one at the bottom, re-ripped to the
+ * border width when that is less than the strip thickness.
+ */
+export function framed(options: {
+  /** The centre woods, then the border wood last. Two centre woods make a checkerboard. */
+  species: string[];
+  /** Columns in the centre. Made even when the centre is a checkerboard. */
+  columns: number;
+  /** Rows in the centre. */
+  rows: number;
+  cellWidth: number;
+  borderWidth: number;
+  shop?: Shop;
+}): Recipe {
+  const { species, rows, cellWidth } = options;
+  requireSpecies(species, 2, 'framed board');
+  requireCount(options.columns, 'Columns');
+  requireCount(rows, 'Rows');
+  const shop = options.shop ?? defaultShop;
+  const borderWidth = Math.min(options.borderWidth, shop.panelThickness);
+  if (borderWidth <= 0) throw new Error('The border needs a width greater than zero.');
+
+  const border = species[species.length - 1] as string;
+  const centre = species.slice(0, -1).slice(0, 2);
+  const checker = centre.length === 2;
+  // Turning a slice end for end only swaps the squares when there is an even number of them.
+  const columns = checker ? Math.max(2, options.columns + (options.columns % 2)) : options.columns;
+
+  const edge: Strip = { species: border, width: borderWidth };
+  const middle = times(columns, (index) => ({ species: cycle(centre, index), width: cellWidth }));
+  const whole = borderWidth > shop.panelThickness - 0.01;
+  const cap: SliceSpec = whole ? { panel: 'B' } : { panel: 'B', ripTo: borderWidth };
+
+  return sizePanels({
+    panels: [
+      { id: 'A', strips: [edge, ...middle, edge], thickness: shop.panelThickness, length: 0 },
+      {
+        id: 'B',
+        strips: [edge, ...middle.map((strip) => ({ ...strip, species: border })), edge],
+        thickness: shop.panelThickness,
+        length: 0,
+      },
+    ],
+    cut: { sliceThickness: shop.sliceThickness, kerf: shop.kerf, endTrim: shop.endTrim },
+    slices: [
+      cap,
+      ...times(rows, (row): SliceSpec => (checker && row % 2 === 1 ? { panel: 'A', flip: true } : { panel: 'A' })),
+      cap,
+    ],
+    flattenPerFace: shop.flattenPerFace,
+  });
+}

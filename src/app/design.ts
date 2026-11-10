@@ -8,11 +8,17 @@ import {
   checkDesign,
   checkerboard,
   chevron,
+  framed,
+  illusion3d,
   inch,
+  MTM_3D_STEPS,
+  plaid,
   planCuts,
   ripList,
   stripes,
   suggestPurchase,
+  tumblingBlocks,
+  TUMBLING_TILT,
   formatLength,
   type BoardResult,
   type CutPlan,
@@ -21,24 +27,42 @@ import {
   type RipLine,
   type Shop,
   type StockBoard,
+  type TumblingResult,
   type Unit,
 } from '../engine';
 
-export type PatternId = 'checkerboard' | 'brick' | 'stripes' | 'chaotic' | 'basketweave' | 'chevron';
+export type PatternId =
+  | 'checkerboard'
+  | 'brick'
+  | 'stripes'
+  | 'chaotic'
+  | 'basketweave'
+  | 'chevron'
+  | 'plaid'
+  | 'framed'
+  | 'tumbling'
+  | 'illusion3d';
 
 export interface PatternInfo {
   id: PatternId;
   name: string;
   blurb: string;
-  level: 'Beginner' | 'Intermediate';
+  level: 'Beginner' | 'Intermediate' | 'Advanced';
   minSpecies: number;
   /** What the "cell width" setting is called for this pattern, or null if the pattern does not use it. */
   cellLabel: string | null;
+  /** True when the board is always square, so only one size is asked for. */
+  square?: boolean;
   /** Settings that suit this pattern, applied when it is chosen. */
   defaults?: Partial<DesignState>;
   /** What to do with the slices before the second glue-up. */
   arrange: string;
 }
+
+/** Side of MTM Wood's 3D board: its step widths out to the centre and back. */
+export const ILLUSION_SIDE = 2 * MTM_3D_STEPS.reduce((sum, step) => sum + step, 0) - (MTM_3D_STEPS.at(-1) as number);
+/** Extra width on the two edge strips of a 3D board, trimmed off after glue-up. */
+const ILLUSION_EDGE_EXTRA = 5;
 
 export const PATTERNS: PatternInfo[] = [
   {
@@ -100,7 +124,55 @@ export const PATTERNS: PatternInfo[] = [
     defaults: { cellWidth: inch(1), stripThickness: inch(0.75) },
     arrange: 'Turn every second slice upside down. This mirrors its slant, so the bands zigzag and meet at each joint.',
   },
+  {
+    id: 'plaid',
+    name: 'Plaid',
+    blurb: 'Squares divided by thin lines running both ways. A third wood shows where the lines cross.',
+    level: 'Intermediate',
+    minSpecies: 2,
+    cellLabel: 'Square width',
+    arrange:
+      'Lay the slices from panel A in a row, with one thin piece from panel B between each pair. Slide the thin pieces until their lines meet the lines of the slices on either side.',
+  },
+  {
+    id: 'framed',
+    name: 'Framed',
+    blurb: 'A centre field with a border of your last wood. The border is end grain too, so it moves with the board.',
+    level: 'Intermediate',
+    minSpecies: 2,
+    cellLabel: 'Block width',
+    arrange:
+      'Put one border piece from panel B first and one last, with the slices from panel A between them. If the centre is a checkerboard, turn every second slice from panel A end for end.',
+  },
+  {
+    id: 'tumbling',
+    name: 'Tumbling blocks',
+    blurb: 'Three woods that read as a stack of cubes. Diamond sticks, six-sided logs, and very exact sawing.',
+    level: 'Advanced',
+    minSpecies: 3,
+    cellLabel: null,
+    // 3/4 in. boards come in most woods at the same thickness, so nothing needs planing.
+    defaults: { stripThickness: inch(0.75) },
+    arrange:
+      'Lay the pucks out like a honeycomb, every one turned the same way, so each wood only ever touches itself at a corner. Every second row starts with a half puck.',
+  },
+  {
+    id: 'illusion3d',
+    name: '3D illusion',
+    blurb: 'Rectangles that shrink towards the centre, so the flat board seems to bulge. Many thin, precise pieces.',
+    level: 'Advanced',
+    minSpecies: 2,
+    cellLabel: null,
+    square: true,
+    // The size of MTM Wood's published board, so its widths are used unchanged.
+    defaults: { boardLength: ILLUSION_SIDE, boardWidth: ILLUSION_SIDE, stripThickness: inch(1.625) },
+    arrange:
+      'Lay the pieces out in the order shown, taking them from panel A and panel B in turn: widest at the two edges, narrowest in the centre. Every piece sits the same way round.',
+  },
 ];
+
+/** Width of the thin lines of a plaid. */
+export const PLAID_LINE = inch(1 / 4);
 
 /** Blade tilt for chevron strips, in degrees from vertical. */
 export const CHEVRON_TILT = 30;
@@ -179,19 +251,26 @@ export interface Design {
   notices: Notice[];
   columns: number;
   rows: number;
+  /** Set for tumbling blocks, which are laid out as a honeycomb and not in slices. */
+  tumbling?: TumblingResult;
 }
 
 const count = (target: number, size: number): number => Math.max(1, Math.round(target / size));
 
 /** Turn the user's choices into a recipe. Throws with a readable message if they do not make a board. */
-export function makeRecipe(state: DesignState): { recipe: Recipe; columns: number; rows: number } {
+export function makeRecipe(state: DesignState): {
+  recipe: Recipe;
+  columns: number;
+  rows: number;
+  tumbling?: TumblingResult;
+} {
   const species = designSpecies(state);
   const info = patternInfo(state.pattern);
   if (species.length < info.minSpecies) {
     throw new Error(
       species.length === 0
         ? 'Choose at least one wood to see your board.'
-        : `A ${info.name.toLowerCase()} board needs at least ${info.minSpecies} woods. Add another wood, or pick a different pattern.`,
+        : `A ${info.name.replace(/^[A-Z](?=[a-z])/, (letter) => letter.toLowerCase())} board needs at least ${info.minSpecies} woods. Add another wood, or pick a different pattern.`,
     );
   }
   if (state.cellWidth <= 0 || state.stripThickness <= 0 || state.boardThickness <= 0) {
@@ -259,6 +338,75 @@ export function makeRecipe(state: DesignState): { recipe: Recipe; columns: numbe
         rows,
       };
     }
+    case 'plaid': {
+      const columns = count(state.boardLength + PLAID_LINE, cell + PLAID_LINE);
+      const deep = count(state.boardWidth + PLAID_LINE, state.stripThickness + PLAID_LINE);
+      return {
+        recipe: plaid({ species, columns, rows: deep, cellWidth: cell, lineWidth: PLAID_LINE, shop }),
+        columns,
+        rows: deep,
+      };
+    }
+    case 'framed': {
+      // The border is as wide as a block, or as the strips are thick if that is less.
+      const borderWidth = Math.min(cell, state.stripThickness);
+      const columns = count(state.boardLength - 2 * borderWidth, cell);
+      const deep = count(state.boardWidth - 2 * borderWidth, state.stripThickness);
+      const recipe = framed({ species, columns, rows: deep, cellWidth: cell, borderWidth, shop });
+      return { recipe, columns: (recipe.panels[0]?.strips.length ?? 2) - 2, rows: deep };
+    }
+    case 'tumbling': {
+      const thickness = state.stripThickness;
+      const side = thickness / Math.sin(Math.PI / 3);
+      // A row is a whole number of pucks plus a half; rows sit 1.5 sides apart.
+      const columns = count(state.boardLength + state.kerf - thickness, 2 * thickness);
+      const deep = count(state.boardWidth / side + 0.5, 1.5);
+      const woods = species.slice(0, 3);
+      const longest =
+        state.woodMode === 'buy'
+          ? Math.max(...woodVaultBoards().map((board) => board.length))
+          : Math.min(
+              ...woods.map((id) =>
+                Math.max(0, ...state.stock.filter((board) => board.species === id).map((board) => board.length)),
+              ),
+            );
+      const tumbling = tumblingBlocks({
+        species: woods as [string, string, string],
+        stockThickness: thickness,
+        columns,
+        rows: deep,
+        puckThickness: shop.sliceThickness,
+        kerf: shop.kerf,
+        endTrim: shop.endTrim,
+        flattenPerFace: shop.flattenPerFace,
+        maxLogLength: longest,
+      });
+      return { recipe: tumbling.recipe, columns, rows: deep, tumbling };
+    }
+    case 'illusion3d': {
+      // MTM Wood's widths, scaled to the size asked for and rounded to marks on a ruler.
+      const grid = state.unit === 'in' ? inch(1 / 32) : 0.5;
+      const snap = (mm: number): number => Math.max(grid, Math.round(mm / grid) * grid);
+      const scale = state.boardLength / ILLUSION_SIDE;
+      const steps = MTM_3D_STEPS.map((step) => snap(step * scale));
+      const widest = Math.max(...steps);
+      if (state.stripThickness < widest - 0.01) {
+        const show = (mm: number): string => formatLength(mm, state.unit);
+        throw new Error(
+          `A 3D illusion board this size has pieces ${show(widest)} wide, which are cut from the thickness of the strips. ` +
+            `Use strips at least ${show(widest)} thick, or make the board smaller.`,
+        );
+      }
+      const recipe = illusion3d({
+        dark: species[0] as string,
+        light: species[1] as string,
+        steps,
+        edgeExtra: snap(ILLUSION_EDGE_EXTRA),
+        shop,
+      });
+      const across = recipe.slices.length;
+      return { recipe, columns: across, rows: across };
+    }
     case 'chaotic': {
       const recipe = chaotic({
         species,
@@ -276,8 +424,8 @@ export function makeRecipe(state: DesignState): { recipe: Recipe; columns: numbe
 
 /** Everything the interface shows for the current choices. */
 export function makeDesign(state: DesignState): Design {
-  const { recipe, columns, rows } = makeRecipe(state);
-  const board = buildBoard(recipe);
+  const { recipe, columns, rows, tumbling } = makeRecipe(state);
+  const board = tumbling?.board ?? buildBoard(recipe);
   const notices: Notice[] = [];
   const show = (mm: number): string => formatLength(mm, state.unit);
 
@@ -287,6 +435,44 @@ export function makeDesign(state: DesignState): Design {
     const suggestion = suggestPurchase(recipe, woodVaultBoards(), { kerf: state.kerf, canPlane: state.canPlane });
     plan = suggestion.plan;
     purchase = suggestion.lines;
+    // Catalog boards differ in thickness, so without a planer one wood may come from several
+    // products. Say so when a planer, perhaps with slightly thinner strips, gives the same
+    // board from a simpler list.
+    if (!state.canPlane && plan.shortfalls.length === 0 && purchase.length > designSpecies(state).length) {
+      const total = (lines: PurchaseLine[]): number => lines.reduce((sum, line) => sum + line.quantity, 0);
+      const wanted = new Set(recipe.panels.flatMap((panel) => panel.strips.map((strip) => strip.species)));
+      const thicknesses = new Set(
+        woodVaultBoards()
+          .filter((item) => wanted.has(item.species) && item.thickness <= state.stripThickness + 0.01)
+          .map((item) => item.thickness),
+      );
+      let best: { lines: PurchaseLine[]; thickness: number } | null = null;
+      for (const thickness of [...thicknesses].sort((a, b) => b - a)) {
+        try {
+          const made = makeRecipe({ ...state, stripThickness: thickness });
+          const other = made.recipe;
+          const result = made.tumbling?.board ?? buildBoard(other);
+          const sameBoard = Math.abs(result.length - board.length) < 1 && Math.abs(result.width - board.width) < 1;
+          if (!sameBoard) continue;
+          const planed = suggestPurchase(other, woodVaultBoards(), { kerf: state.kerf, canPlane: true });
+          if (planed.plan.shortfalls.length > 0) continue;
+          if (planed.lines.length < (best?.lines.length ?? purchase.length)) best = { lines: planed.lines, thickness };
+        } catch {
+          // This thickness does not make the board; try the next.
+        }
+      }
+      if (best) {
+        const thinner = Math.abs(best.thickness - state.stripThickness) > 0.01;
+        notices.push({
+          level: 'caution',
+          message:
+            `This shopping list has ${total(purchase)} boards of ${purchase.length} kinds, because the woods you chose are sold in different thicknesses. ` +
+            `With a thickness planer${thinner ? ` and strips ${show(best.thickness)} thick` : ''} it would be ` +
+            `${total(best.lines)} ${total(best.lines) === 1 ? 'board' : 'boards'} of ${best.lines.length} ${best.lines.length === 1 ? 'kind' : 'kinds'}. ` +
+            `If you have a planer, say so in the first step${thinner ? ' and set the strip thickness in the fourth' : ''}.`,
+        });
+      }
+    }
     for (const species of new Set(plan.shortfalls.map((entry) => entry.species))) {
       const name = speciesById(species)?.name ?? species;
       notices.push({
@@ -323,13 +509,27 @@ export function makeDesign(state: DesignState): Design {
 
   for (const warning of checkDesign(recipe, board)) notices.push(warning);
 
-  if (state.pattern === 'chevron') {
+  if (state.pattern === 'chevron' || state.pattern === 'plaid' || state.pattern === 'framed') {
     notices.push({
       level: 'caution',
       message:
         'The steps for this pattern are worked out from its geometry, not taken from a published build guide. ' +
-        'Rip a short test piece first to check your blade tilt and fence setting.',
+        (state.pattern === 'chevron'
+          ? 'Rip a short test piece first to check your blade tilt and fence setting.'
+          : 'Make a test cut on an offcut before each new fence setting.'),
     });
+  }
+  if (tumbling) {
+    notices.push({
+      level: 'caution',
+      message:
+        'This follows two published builds, from This Old House and LumberJocks. Neither gives the size of the diamond sticks, ' +
+        'so that is worked out from the geometry: all four sides equal. The pattern only closes up if the ' +
+        `${TUMBLING_TILT} degree cuts are exact, so make test cuts in all three woods first.`,
+    });
+    if (designSpecies(state).length > 3) {
+      notices.push({ level: 'caution', message: 'This pattern uses only the first three woods in your list.' });
+    }
   }
   if (state.pattern === 'basketweave') {
     notices.push({
@@ -338,6 +538,18 @@ export function makeDesign(state: DesignState): Design {
         `Each tile must be exactly square: its ${WEAVE_STRIPS} strips together must measure the same as the ` +
         'thickness of your boards. Measure a glued panel before slicing it, and trim it square if needed.',
     });
+  }
+
+  if (state.pattern === 'illusion3d') {
+    notices.push({
+      level: 'caution',
+      message:
+        "The sizes follow MTM Wood's published plan for this board. The order of work is theirs; the detail of each " +
+        'step here is worked out from the geometry. Make a test cut before each new fence setting.',
+    });
+    if (designSpecies(state).length > 2) {
+      notices.push({ level: 'caution', message: 'This pattern uses only the first two woods in your list.' });
+    }
   }
 
   for (const planned of plan.boards) {
@@ -359,7 +571,17 @@ export function makeDesign(state: DesignState): Design {
     notices.push({ level: 'caution', message: warning.message });
   }
 
-  return { recipe, board, plan, rips: ripList(plan), purchase, notices, columns, rows };
+  return {
+    recipe,
+    board,
+    plan,
+    rips: ripList(plan),
+    purchase,
+    notices,
+    columns,
+    rows,
+    ...(tumbling ? { tumbling } : {}),
+  };
 }
 
 /** A sensible strip thickness for the user's own boards: one every chosen wood can supply. */
@@ -370,4 +592,34 @@ export function suggestedStripThickness(state: DesignState): number | null {
     Math.max(...state.stock.filter((board) => board.species === id).map((board) => board.thickness)),
   );
   return Math.min(...thickest);
+}
+
+/** True when the design can be built as it stands: nothing is missing and nothing needs fixing. */
+function buildable(state: DesignState): boolean {
+  try {
+    const design = makeDesign(state);
+    return design.plan.shortfalls.length === 0 && design.notices.every((notice) => notice.level !== 'problem');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The biggest board the user's own wood can make in the current pattern, keeping the
+ * proportions they have set. Null when no size works, or when the app is choosing the wood.
+ *
+ * It tries sizes from three times the current one downwards in steps of 3%, and takes the
+ * first that can be built. Simple, and quick enough for a button press.
+ */
+export function biggestBoard(state: DesignState): { boardLength: number; boardWidth: number } | null {
+  if (state.woodMode !== 'have') return null;
+  for (let scale = 3; scale > 0.1; scale *= 0.97) {
+    const size = { boardLength: state.boardLength * scale, boardWidth: state.boardWidth * scale };
+    if (buildable({ ...state, ...size })) {
+      // Report the size the pieces actually make, so the boxes show round numbers of pieces.
+      const { board } = makeDesign({ ...state, ...size });
+      return { boardLength: board.length, boardWidth: board.width };
+    }
+  }
+  return null;
 }

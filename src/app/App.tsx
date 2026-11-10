@@ -4,14 +4,18 @@ import { BoardPreview, Notices } from './parts';
 import { PlanStep } from './PlanStep';
 import { PatternStep, ShopStep, TuneStep, WoodStep } from './steps';
 import { formatLength } from '../engine';
+import { cleanState, designFromHash, shareLink } from './share';
 
 const STEPS = ['Your shop', 'Your wood', 'Pattern', 'Size', 'Cut list'] as const;
 const STORAGE_KEY = 'cutting-board-designer/v1';
 
 function loadState(): DesignState {
+  // A shared link wins over whatever was saved here before.
+  const shared = designFromHash(window.location.hash);
+  if (shared) return shared;
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved) return { ...defaultState, ...(JSON.parse(saved) as Partial<DesignState>) };
+    if (saved) return cleanState(JSON.parse(saved));
   } catch {
     // Storage is unavailable or the saved design is unreadable: start fresh.
   }
@@ -22,7 +26,28 @@ export type Update = (changes: Partial<DesignState>) => void;
 
 export function App() {
   const [state, setState] = useState<DesignState>(loadState);
-  const [step, setStep] = useState(0);
+  // Someone opening a shared link wants to see the board, so start them on the cut list.
+  const [step, setStep] = useState(() => (designFromHash(window.location.hash) ? STEPS.length - 1 : 0));
+  const [link, setLink] = useState<{ url: string; copied: boolean } | null>(null);
+
+  useEffect(() => {
+    // Once the shared design is loaded, tidy the address so later changes are not mistaken for it.
+    if (window.location.hash) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  }, []);
+  // A link shows the design as it was when the link was made.
+  useEffect(() => setLink(null), [state]);
+
+  const share = async (): Promise<void> => {
+    const url = shareLink(state, window.location.href);
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    } catch {
+      // No clipboard access: the link is shown so it can be copied by hand.
+    }
+    setLink({ url, copied });
+  };
   const update: Update = (changes) => setState((current) => ({ ...current, ...changes }));
 
   useEffect(() => {
@@ -105,11 +130,26 @@ export function App() {
               </button>
             )}
             {step === STEPS.length - 1 && design && (
-              <button type="button" className="primary" onClick={() => window.print()}>
-                {state.showGuide ? 'Print instructions' : 'Print cut list'}
-              </button>
+              <>
+                <button type="button" className="primary" onClick={() => void share()}>
+                  Copy a link to this design
+                </button>
+                <button type="button" className="primary" onClick={() => window.print()}>
+                  {state.showGuide ? 'Print instructions' : 'Print cut list'}
+                </button>
+              </>
             )}
           </div>
+          {step === STEPS.length - 1 && link && (
+            <div className="share-link" role="status">
+              <label htmlFor="share-link">
+                {link.copied
+                  ? 'Link copied. Anyone who opens it sees this design.'
+                  : 'Copy this link. Anyone who opens it sees this design.'}
+              </label>
+              <input id="share-link" type="text" readOnly value={link.url} onFocus={(event) => event.target.select()} />
+            </div>
+          )}
         </section>
 
         {showPreview && (

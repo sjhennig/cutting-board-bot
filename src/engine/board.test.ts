@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBoard, lengthForSlices, packWidths, slicesFromLength } from './board';
+import { buildBoard, lengthForSlices, packWidths, reRipPlan, slicesFromLength } from './board';
 import { brick, chaotic, checkerboard, illusion3d, stripes } from './patterns';
 import type { Recipe, WasteReport } from './types';
 import { inch } from './units';
@@ -150,6 +150,34 @@ describe('3D illusion board', () => {
 
   it('gets several narrow pieces out of each slice', () => {
     expect(board.panels.map((panel) => panel.slicesNeeded)).toEqual([5, 4]);
+  });
+
+  it('says which pieces to rip from each slice', () => {
+    const plans = recipe.panels.map((panel) => reRipPlan(panel, recipe)!);
+    expect(plans.map((plan) => plan.length)).toEqual([5, 4]);
+    expect(plans[0]!.map((slice) => slice.widths)).toEqual([
+      [33, 9],
+      [33, 9],
+      [24, 15, 3],
+      [24, 15],
+      [5, 5],
+    ]);
+    // Every piece of the board comes from exactly one slice.
+    const pieces = plans.flatMap((plan) => plan.flatMap((slice) => slice.pieces)).sort((a, b) => a - b);
+    expect(pieces).toEqual(recipe.slices.map((_, index) => index));
+    // Pieces, saw cuts and offcut never add up to more than the slice.
+    for (const panel of recipe.panels) {
+      for (const slice of reRipPlan(panel, recipe)!) {
+        const pieceTotal = slice.widths.reduce((sum, width) => sum + width, 0);
+        expect(pieceTotal + (slice.widths.length - 1) * recipe.cut.kerf).toBeLessThanOrEqual(panel.thickness + 0.01);
+        expect(pieceTotal + slice.offcut).toBeLessThanOrEqual(panel.thickness + 0.01);
+      }
+    }
+  });
+
+  it('has no re-rip plan when slices are used whole', () => {
+    const plain = checkerboard({ species: ['maple', 'walnut'], columns: 4, rows: 4, cellWidth: 30 });
+    expect(reRipPlan(plain.panels[0]!, plain)).toBeNull();
   });
 
   it('is symmetrical about both centre lines', () => {

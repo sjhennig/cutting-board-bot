@@ -88,13 +88,29 @@ export function suggestPurchase(recipe: Recipe, catalog: BuyableBoard[], options
         options,
       ),
     );
-    const separate: Choice | null = parts.every((part): part is Choice => part !== null)
-      ? {
-          lines: parts.flatMap((part) => part.lines),
-          boards: parts.flatMap((part) => part.boards),
-          volume: parts.reduce((sum, part) => sum + part.volume, 0),
-        }
-      : null;
+    // Widths that chose the same board size are cut from shared boards, not one board each.
+    let separate: Choice | null = null;
+    if (parts.every((part): part is Choice => part !== null)) {
+      const sharing = new Map<string, StripNeed[]>();
+      widths.forEach((width, index) => {
+        const id = (parts[index] as Choice).lines[0]!.board.id;
+        sharing.set(id, [...(sharing.get(id) ?? []), ...mine.filter((need) => need.width === width)]);
+      });
+      const shared = [...sharing].map(([id, group]) =>
+        bestSingleProduct(
+          group,
+          products.filter((board) => board.id === id),
+          options,
+        ),
+      );
+      if (shared.every((part): part is Choice => part !== null)) {
+        separate = {
+          lines: shared.flatMap((part) => part.lines),
+          boards: shared.flatMap((part) => part.boards),
+          volume: shared.reduce((sum, part) => sum + part.volume, 0),
+        };
+      }
+    }
 
     const choice = separate && (!together || separate.volume < together.volume - EPS) ? separate : together;
     if (!choice) {
@@ -108,15 +124,16 @@ export function suggestPurchase(recipe: Recipe, catalog: BuyableBoard[], options
       continue;
     }
 
-    // Number the copies of each board size across the whole purchase.
+    // Number the copies of each board size across the whole purchase. The same size can be
+    // chosen for several strip widths, each numbered from 1, so count them up as they are added.
     for (const line of choice.lines) {
       const existing = lines.find((entry) => entry.board.id === line.board.id);
-      const offset = existing?.quantity ?? 0;
-      for (const board of choice.boards.filter((planned) => planned.stockId === line.board.id)) {
-        boards.push({ ...board, copy: board.copy + offset });
-      }
       if (existing) existing.quantity += line.quantity;
       else lines.push({ ...line });
+    }
+    for (const board of choice.boards) {
+      const copy = boards.filter((planned) => planned.stockId === board.stockId).length + 1;
+      boards.push({ ...board, copy });
     }
   }
 

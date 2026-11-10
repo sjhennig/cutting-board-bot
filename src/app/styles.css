@@ -256,6 +256,22 @@ svg.panel {
   margin-left: auto;
 }
 
+.step-nav .primary + .primary {
+  margin-left: 0;
+}
+
+.share-link {
+  margin-top: 14px;
+  font-size: 0.92rem;
+}
+
+.share-link input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
 .empty {
   color: var(--muted);
   background: var(--bg);
@@ -852,4 +868,108 @@ svg.diagram text {
 .level.intermediate {
   background: var(--caution-soft);
   color: var(--caution);
+}
+
+.level.advanced {
+  background: #e9e6f5;
+  color: #44357a;
+}
+
+.panel-group + .panel-group {
+  margin-top: 18px;
+}
+
+/* The cut table: long lists of rips and offcuts wrap, one item to a line. */
+.plan table.cuts td {
+  white-space: normal;
+}
+
+.plan table.cuts td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.plan table.cuts td:nth-child(4) {
+  min-width: 11em;
+}
+
+@media print {
+  .share-link {
+    display: none;
+  }
+}
+
+/* Paper is scarce on a workshop wall: print smaller and tighter than the screen. */
+@page {
+  margin: 12mm;
+}
+
+@media print {
+  :root {
+    font-size: 10pt;
+  }
+
+  .top {
+    display: none;
+  }
+
+  .plan section {
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  .plan-previews {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .plan-previews svg {
+    max-height: 150px;
+  }
+
+  /* Pictures are kept whole, so a tall one can leave half a page empty. Keep them short. */
+  .step-diagram {
+    margin: 8px 0;
+  }
+
+  .step-diagram svg {
+    max-height: 170px;
+  }
+
+  .step-diagram .stock-cuts svg {
+    max-height: 60px;
+  }
+
+  th,
+  td {
+    padding: 4px 8px;
+  }
+
+  /* Short tables stay whole, with the heading that introduces them. */
+  table {
+    break-inside: avoid;
+  }
+
+  /* Two tips to a row. A grid cannot be split across pages, so it would jump to the next one whole. */
+  .tips {
+    display: block;
+  }
+
+  .tip {
+    display: inline-block;
+    vertical-align: top;
+    box-sizing: border-box;
+    width: 49.4%;
+    padding: 8px 10px;
+    margin: 0 0 6px;
+    font-size: 0.9rem;
+  }
+
+  .tip:nth-child(odd) {
+    margin-right: 1.2%;
+  }
+
+  .strip-order {
+    columns: 3 150px;
+  }
 }

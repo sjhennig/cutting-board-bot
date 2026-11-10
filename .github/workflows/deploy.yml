@@ -22,6 +22,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # A real browser clicks through the designer. Catches what the unit tests cannot see.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
       - if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
