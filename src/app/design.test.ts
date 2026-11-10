@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { inch, type StockBoard } from '../engine';
-import { PATTERNS, defaultState, makeDesign, suggestedStripThickness, type DesignState } from './design';
+import { PATTERNS, biggestBoard, defaultState, makeDesign, suggestedStripThickness, type DesignState } from './design';
 
 const own = (species: string, thickness: number, quantity: number): StockBoard => ({
   id: `${species}-${thickness}`,
@@ -209,5 +209,47 @@ describe('makeDesign', () => {
     };
     expect(suggestedStripThickness(state)).toBeCloseTo(inch(1.5), 6);
     expect(suggestedStripThickness(defaultState)).toBeNull();
+  });
+
+  describe('biggestBoard', () => {
+    const state: DesignState = {
+      ...defaultState,
+      woodMode: 'have',
+      cellWidth: inch(1.5),
+      stripThickness: inch(1.5),
+      boardLength: inch(30),
+      boardWidth: inch(26),
+      stock: [own('hard-maple', 1.5, 2), own('black-walnut', 1.5, 2)],
+    };
+
+    it('finds a size the wood can make when the size asked for is too big', () => {
+      expect(makeDesign(state).plan.shortfalls.length).toBeGreaterThan(0);
+      const size = biggestBoard(state)!;
+      const design = makeDesign({ ...state, ...size });
+      expect(design.plan.shortfalls).toEqual([]);
+      expect(design.notices.filter((notice) => notice.level === 'problem')).toEqual([]);
+      // Two boards of each wood give six 1-1/2 in. strips each: twelve columns.
+      expect(design.columns).toBe(12);
+      expect(size.boardLength).toBeCloseTo(inch(18), 6);
+      expect(size.boardLength).toBeCloseTo(design.board.length, 6);
+    });
+
+    it('cannot be bettered by asking for a little more', () => {
+      const size = biggestBoard(state)!;
+      const more = { boardLength: size.boardLength + inch(1.5), boardWidth: size.boardWidth + inch(1.5) };
+      const design = makeDesign({ ...state, ...more });
+      const fits = design.plan.shortfalls.length === 0 && design.notices.every((notice) => notice.level !== 'problem');
+      expect(fits).toBe(false);
+    });
+
+    it('grows a small board as well as shrinking a big one', () => {
+      const small = { ...state, boardLength: inch(6), boardWidth: inch(5.2) };
+      expect(biggestBoard(small)!.boardLength).toBeGreaterThan(inch(12));
+    });
+
+    it('has nothing to offer when the wood cannot make the pattern, or is being bought', () => {
+      expect(biggestBoard({ ...state, stock: [own('hard-maple', 1.5, 2)] })).toBeNull();
+      expect(biggestBoard(defaultState)).toBeNull();
+    });
   });
 });

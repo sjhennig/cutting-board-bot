@@ -229,7 +229,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 | Outputs             | Cut list in build order; optional full instructions with diagrams, numbered steps, sanding, oiling and care; print layout for both. Both handle designs with more than one kind of panel |
 | Tips                | Twenty, each citing a source read in full on 9 November 2026; disagreements between sources are shown                                                                                    |
 | Data                | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                                                   |
-| Project hygiene     | 157 unit tests and 17 end-to-end browser tests; formatting, type, unit and browser checks on every push; automatic publishing of `main` to GitHub Pages once switched on                 |
+| Project hygiene     | 161 unit tests and 17 end-to-end browser tests; formatting, type, unit and browser checks on every push; automatic publishing of `main` to GitHub Pages once switched on                 |
 
 ### What the second session changed
 
@@ -240,6 +240,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 - **Boards within 0.15 mm of the thickness wanted are used as they are.** Without this a 38 mm strip could not come from a 38.1 mm (1-1/2 in.) board unless it was planed.
 - **The designer says when a planer would shorten the shopping list.** Maple and walnut are sold in different thicknesses, so the 3D board in those woods draws maple from four products; with a planer and 1-1/2 in. strips it is two boards.
 - **Share links.** "Copy a link to this design" on the last step. The design travels in the link, so there is still no server. Saved and shared designs are now checked field by field, so a damaged link or an old saved design cannot break the page.
+- **"Make the biggest board my wood allows"** on the size step, for people working from boards they already have.
 - **A purchase planner bug was fixed.** When one board size was the best choice for several strip widths, the cut plan listed those boards several times over and bought one board per width. The first end-to-end test of the 3D board exposed it. No earlier pattern triggered it, because each needed one strip width per wood.
 
 ### Outstanding
@@ -261,7 +262,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 
 **Designer**
 
-- "What is the biggest board I can make from my wood?" With your own boards you set a size and the app says whether it fits; it does not work backwards.
+- The biggest-board button keeps the proportions you set and tries sizes in 3% steps. It does not try other proportions, strip widths or patterns.
 - The cut planner places each strip in the first board with room. For the 3D board that can pair a 5/32 in. piece with a wide one in the same slice, which is awkward to saw. A smarter pairing would help.
 - Animated view of the cut-and-flip step. A still diagram covers it for now.
 - Full instructions print at about ten pages, more for the 3D board. Worth a compact option.
@@ -279,6 +280,6 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 ### Recommended next session
 
 1. **Tumbling blocks**, the largest remaining piece of new geometry. Read a published build guide first (section 10, item 5).
-2. "What is the biggest board I can make from my wood?" for people working from offcuts.
+2. Pixel art, or a compact print option: whichever real users ask for first.
 
 If real-user feedback arrives first, let it reorder this list.

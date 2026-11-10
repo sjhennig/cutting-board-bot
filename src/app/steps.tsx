@@ -7,6 +7,7 @@ import {
   CHEVRON_TILT,
   ILLUSION_SIDE,
   PATTERNS,
+  biggestBoard,
   WEAVE_STRIPS,
   designSpecies,
   makeDesign,
@@ -386,6 +387,7 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
   const species = designSpecies(state);
   const suggested = suggestedStripThickness(state);
   const owned = [...new Set(state.stock.map((board) => board.species))];
+  const [noFit, setNoFit] = useState(false);
 
   const move = (index: number, by: number): void => {
     const order = [...state.buySpecies];
@@ -438,6 +440,26 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
             hint="1-1/2 in. or more resists warping."
           />
         </div>
+        {state.woodMode === 'have' && state.stock.length > 0 && (
+          <div className="presets">
+            <button
+              type="button"
+              className="chip"
+              onClick={() => {
+                const size = biggestBoard(state);
+                setNoFit(size === null);
+                if (size) update(size);
+              }}
+            >
+              Make the biggest board my wood allows
+            </button>
+            <span>
+              {noFit
+                ? 'Your boards cannot make this pattern at any size. The notes beside the preview say what is missing.'
+                : 'Keeps the proportions above.'}
+            </span>
+          </div>
+        )}
       </fieldset>
 
       <fieldset>

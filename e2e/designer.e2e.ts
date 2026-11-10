@@ -159,6 +159,14 @@ test('with too little of your own wood, the cut list says what is missing', asyn
   await goTo(page, 'Cut list');
   await expect(page.locator('.notices .problem').first()).toContainText('Not enough');
 
+  // The designer can shrink the board to fit the wood there is.
+  await goTo(page, 'Size');
+  await page.getByRole('button', { name: 'Make the biggest board my wood allows' }).click();
+  await expect(page.locator('.preview .notices .problem')).toHaveCount(0);
+  await goTo(page, 'Cut list');
+  await expect(page.locator('.notices .problem')).toHaveCount(0);
+  await expect(section(page, 'Gather your boards')).toBeVisible();
+
   // Six of each is plenty.
   await goTo(page, 'Your wood');
   for (const wood of ['Hard maple', 'Black walnut']) {

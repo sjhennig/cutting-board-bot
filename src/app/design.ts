@@ -511,3 +511,33 @@ export function suggestedStripThickness(state: DesignState): number | null {
   );
   return Math.min(...thickest);
 }
+
+/** True when the design can be built as it stands: nothing is missing and nothing needs fixing. */
+function buildable(state: DesignState): boolean {
+  try {
+    const design = makeDesign(state);
+    return design.plan.shortfalls.length === 0 && design.notices.every((notice) => notice.level !== 'problem');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The biggest board the user's own wood can make in the current pattern, keeping the
+ * proportions they have set. Null when no size works, or when the app is choosing the wood.
+ *
+ * It tries sizes from three times the current one downwards in steps of 3%, and takes the
+ * first that can be built. Simple, and quick enough for a button press.
+ */
+export function biggestBoard(state: DesignState): { boardLength: number; boardWidth: number } | null {
+  if (state.woodMode !== 'have') return null;
+  for (let scale = 3; scale > 0.1; scale *= 0.97) {
+    const size = { boardLength: state.boardLength * scale, boardWidth: state.boardWidth * scale };
+    if (buildable({ ...state, ...size })) {
+      // Report the size the pieces actually make, so the boxes show round numbers of pieces.
+      const { board } = makeDesign({ ...state, ...size });
+      return { boardLength: board.length, boardWidth: board.width };
+    }
+  }
+  return null;
+}
