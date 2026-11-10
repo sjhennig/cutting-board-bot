@@ -214,3 +214,62 @@ Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 3. **Competitor to try by hand.** Cutting Board Studio.
 4. **USDA sanitising advice.** The USDA cutting board page refuses automated visits, so its bleach-sanitising advice is not in the app. Read it by hand before adding.
 5. **Tumbling blocks.** Confirm the build sequence against a published guide.
+
+## 11. Status and where to pick up
+
+Written 10 November 2026, at the end of the first working session. Read this section first.
+
+### Completed
+
+| Area                  | What exists                                                                                                                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Geometry engine       | Recipe model, finished size, surface layout, slice counts, full waste breakdown, cut planner, purchase planner, design checks (`src/engine`)           |
+| Patterns in the app   | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron (intermediate)                                                                 |
+| Patterns, engine only | MTM Wood's 3D illusion board: generated and tested against the published plan, but not offered in the interface                                        |
+| Designer              | Five steps: shop, wood, pattern, size, cut list. Buy from the Wood Vault catalog or enter your own boards. Design remembered in the browser            |
+| Outputs               | Cut list in build order; optional full instructions with five diagrams, numbered steps, sanding, oiling and care; print layout for both                |
+| Tips                  | Twenty, each citing a source read in full on 9 November 2026; disagreements between sources are shown                                                  |
+| Data                  | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                 |
+| Project hygiene       | 111 automated tests; formatting, type and test checks on every push (`npm run check`); automatic publishing of `main` to GitHub Pages once switched on |
+
+### Outstanding
+
+**Needs a person**
+
+- Switch on GitHub Pages: Settings, Pages, Source, "GitHub Actions". The site is not live until this is done.
+- Try the designer as a real user and note what is confusing. Nobody but the author has used it yet.
+- Confirm what a Wood Vault cutting board pack contains (how many strips, how wide), so packs can join the catalog.
+- Read the USDA cutting board page by hand if bleach-sanitising advice is wanted in the care card.
+
+**Patterns**
+
+- 3D illusion board in the interface. The engine work is done; the cut list screen assumes one kind of panel and this design has two.
+- Plaid and framed boards. Same blocker as the 3D board, plus small pattern generators.
+- Tumbling blocks. Needs its own geometry (60 degree rhombus sticks in hexagonal logs, section 3) and a published build guide to check against. Not started.
+- Pixel art. Not started.
+- Chevron tilt is fixed at 30 degrees. Its build steps are worked out from geometry and have not been checked against a published guide.
+
+**Designer**
+
+- "What is the biggest board I can make from my wood?" With your own boards you set a size and the app says whether it fits; it does not work backwards.
+- Animated view of the cut-and-flip step. A still diagram covers it for now.
+- Full instructions print at about ten pages. Worth a compact option.
+
+**Polish (Phase 6)**
+
+- Wood grain textures in previews, share links, cost estimate.
+
+**Verification**
+
+- The browser walk-throughs were run by hand and are not in the repository. An automated end-to-end test would catch interface regressions that the unit tests cannot.
+- Species hardness figures were never checked and are not used in the app.
+- Competitors not yet tried: Cutting Board Studio (thecraftycatsman.com).
+
+### Recommended next session
+
+1. **Make the cut list screen handle more than one kind of panel.** This single change unlocks the 3D illusion board, plaid and framed boards, and the 3D board is the closest thing to the original brief's "more complicated 3D patterns". Start in `src/app/PlanStep.tsx` and `src/app/guide.ts`, which both read `recipe.panels[0]`.
+2. **Add the 3D illusion board to the pattern gallery** as the first Advanced pattern, using `illusion3d` in `src/engine/patterns.ts`.
+3. **Add an automated end-to-end test** of the five steps before the interface grows further.
+4. Then tumbling blocks, which is the largest remaining piece of new geometry.
+
+If real-user feedback arrives first, let it reorder this list.
