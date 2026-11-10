@@ -11,6 +11,9 @@ const own = (species: string, thickness: number, quantity: number): StockBoard =
   quantity,
 });
 
+const woods = (pattern: { minSpecies: number }): string[] =>
+  pattern.minSpecies > 2 ? ['hard-maple', 'cherry', 'black-walnut'] : defaultState.buySpecies;
+
 describe('makeDesign', () => {
   it('gives a first-time visitor a buildable board with nothing to fix', () => {
     const design = makeDesign(defaultState);
@@ -23,9 +26,14 @@ describe('makeDesign', () => {
     expect(design.plan.boards.every((board) => board.segments[0]!.leftoverWidth === 0)).toBe(true);
   });
 
-  it.each(PATTERNS)('builds a $name board from the default woods, with nothing to fix', (pattern) => {
-    // Choosing a pattern in the app applies its defaults.
-    const design = makeDesign({ ...defaultState, ...pattern.defaults, pattern: pattern.id });
+  it.each(PATTERNS)('builds a $name board from catalog woods, with nothing to fix', (pattern) => {
+    // Choosing a pattern in the app applies its defaults. Tumbling blocks need a third wood.
+    const design = makeDesign({
+      ...defaultState,
+      ...pattern.defaults,
+      pattern: pattern.id,
+      buySpecies: woods(pattern),
+    });
     expect(design.plan.shortfalls).toEqual([]);
     expect(design.notices.filter((notice) => notice.level === 'problem')).toEqual([]);
     expect(design.board.cells.length).toBeGreaterThan(0);
@@ -138,6 +146,44 @@ describe('makeDesign', () => {
     expect(three.recipe.slices.some((slice) => slice.flip)).toBe(true);
     expect(three.columns % 2).toBe(0);
     expect(three.plan.shortfalls).toEqual([]);
+  });
+
+  describe('tumbling blocks', () => {
+    const pattern = PATTERNS.find((entry) => entry.id === 'tumbling')!;
+    const state: DesignState = {
+      ...defaultState,
+      ...pattern.defaults,
+      pattern: 'tumbling',
+      buySpecies: woods(pattern),
+    };
+
+    it('needs three woods', () => {
+      expect(() => makeDesign({ ...state, buySpecies: defaultState.buySpecies })).toThrow(/needs at least 3 woods/);
+    });
+
+    it('makes cubes twice as wide as the boards are thick, from 3/4 in. boards with tilted rips', () => {
+      const design = makeDesign(state);
+      const { tumbling } = design;
+      expect(tumbling!.acrossFlats).toBeCloseTo(inch(1.5), 6);
+      // Ten whole 1-1/2 in. pucks and a half, less the saw cut that halves a puck: the nearest to 15 in.
+      expect(design.columns).toBe(10);
+      expect(design.board.length).toBeCloseTo(inch(10.5 * 1.5 - 1 / 8), 6);
+      expect(Math.abs(design.board.width - inch(13))).toBeLessThan(inch(0.75));
+      expect(design.rips.every((line) => line.bevel === 30)).toBe(true);
+      expect(design.purchase.every((line) => Math.abs(line.board.thickness - inch(0.75)) < 0.01)).toBe(true);
+      expect(design.purchase.map((line) => line.board.species).sort()).toEqual([
+        'black-walnut',
+        'cherry',
+        'hard-maple',
+      ]);
+      expect(design.notices.some((notice) => notice.message.includes('This Old House'))).toBe(true);
+    });
+
+    it('makes bigger cubes, and fewer pucks, from thicker boards', () => {
+      const thin = makeDesign(state).tumbling!;
+      const thick = makeDesign({ ...state, stripThickness: inch(1.5), canPlane: true }).tumbling!;
+      expect(thick.pucks).toBeLessThan(thin.pucks / 3);
+    });
   });
 
   it('rounds the requested size to whole pieces', () => {

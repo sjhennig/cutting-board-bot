@@ -22,10 +22,13 @@ export interface Tip {
   /** A credible source that does it differently. */
   otherView?: { text: string; sources: Source[] };
   /** Only shown when the design calls for it. */
-  when?: 'narrow-pieces' | 'needs-ripping' | 'shifted-slices';
+  when?: 'narrow-pieces' | 'needs-ripping' | 'shifted-slices' | 'tumbling';
 }
 
-/** The date the sources below were last opened and read. */
+/**
+ * The date the sources below were opened and read. The two tumbling block guides were
+ * read a day later, on 2026-11-10.
+ */
 export const SOURCES_CHECKED = '2026-11-09';
 
 const MTM_PLAN: Source = {
@@ -69,7 +72,52 @@ const TWW_FINISH: Source = {
   url: 'https://thewoodwhisperer.com/articles/cutting-board-finish/',
 };
 
+const TOH_CUBE: Source = {
+  name: 'This Old House, "How To Make a 3D Cube Cutting Board"',
+  url: 'https://www.thisoldhouse.com/kitchens/how-to-make-cube-cutting-board',
+};
+const LJ_TUMBLING: Source = {
+  name: 'LumberJocks, jfk4032, "Tumbling block cutting board techniques, lessons learned and tips"',
+  url: 'https://www.lumberjocks.com/threads/tumbling-block-cutting-board-techniques-lessons-learned-and-tips-for-cutting-and-assembly.347458/',
+};
+
 export const TIPS: Tip[] = [
+  {
+    id: 'angle-gauge',
+    stage: 'strips',
+    when: 'tumbling',
+    title: 'Set the blade with an angle gauge, not the saw’s scale',
+    text: 'The angle has to be exact. Use a digital angle gauge, or a protractor and bevel gauge with test cuts, and do not rely on the scale on the saw. Fix a straight board to the fence, tight to the table, so the slanted edge cannot slip under it.',
+    sources: [TOH_CUBE],
+  },
+  {
+    id: 'test-three-woods',
+    stage: 'strips',
+    when: 'tumbling',
+    title: 'Test in all three woods before cutting everything',
+    text: 'Cut a test stick in each wood and fit the three together dry. Measure all four sides of every stick: they must be equal, and the same from stick to stick. One maker lost a whole batch to sticks that had shifted slightly as they were cut.',
+    sources: [LJ_TUMBLING, TOH_CUBE],
+  },
+  {
+    id: 'wrap-logs',
+    stage: 'panel',
+    when: 'tumbling',
+    title: 'Wrap the logs instead of clamping them',
+    text: 'Ordinary clamps cannot grip a six-sided log. Wrap it tightly with painter’s tape, or with strong rubber bands doubled up, which press evenly from every side. Use glue sparingly: too much keeps the joints from closing.',
+    sources: [TOH_CUBE, LJ_TUMBLING],
+  },
+  {
+    id: 'row-at-a-time',
+    stage: 'arrange',
+    when: 'tumbling',
+    title: 'Glue one whole row at a time against a straight edge',
+    text: 'Small errors add up across a honeycomb. One maker who glued a few pieces at a time found an error of under 1/16 in. in the first row had grown to 3/16 in. across 13 in. Gluing a full row at a time against a straight reference brought that down to about 1/32 in. Keep clamp pressure moderate so the row does not lift.',
+    sources: [LJ_TUMBLING],
+    otherView: {
+      text: 'Tom Silva of This Old House starts at the centre and works outward, boxes the pucks in with straight boards and clamps all round, then fills any gaps with a paste of glue and sawdust before flattening again.',
+      sources: [TOH_CUBE],
+    },
+  },
   {
     id: 'same-thickness',
     stage: 'strips',

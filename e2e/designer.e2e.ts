@@ -15,7 +15,7 @@ const goTo = (page: Page, step: string) =>
   page.getByRole('navigation', { name: 'Steps' }).getByRole('button', { name: step }).click();
 const pattern = (page: Page, name: string) =>
   page.locator('label.pattern', { has: page.locator('.title', { hasText: new RegExp(`^${name}$`) }) });
-const section = (page: Page, title: string) =>
+const section = (page: Page, title: string | RegExp) =>
   page.locator('.plan section', { has: page.locator('h3', { hasText: title }) });
 
 const PATTERNS = [
@@ -27,6 +27,7 @@ const PATTERNS = [
   'Chevron',
   'Plaid',
   'Framed',
+  'Tumbling blocks',
   '3D illusion',
 ];
 
@@ -79,6 +80,13 @@ for (const name of PATTERNS) {
   test(`the ${name} pattern produces a cut list and instructions with nothing to fix`, async ({ page }) => {
     const errors = watchForErrors(page);
     await page.goto('/');
+    if (name === 'Tumbling blocks') {
+      // The one pattern that needs a third wood.
+      await goTo(page, 'Pattern');
+      await expect(pattern(page, name)).toContainText('Needs 3 woods');
+      await goTo(page, 'Your wood');
+      await page.locator('label.species', { hasText: 'Cherry' }).click();
+    }
     await goTo(page, 'Pattern');
     await pattern(page, name).click();
     await expect(pattern(page, name)).toHaveClass(/selected/);
@@ -88,7 +96,11 @@ for (const name of PATTERNS) {
     await expect(page.getByRole('heading', { name: 'Your cut list' })).toBeVisible();
     await expect(page.locator('.notices .problem')).toHaveCount(0);
     await expect(page.getByRole('img', { name: 'The finished board' })).toBeVisible();
-    await expect(section(page, 'Cut the strips').locator('tbody tr').first()).toBeVisible();
+    await expect(
+      section(page, /^\d+Cut the (strips|diamond sticks)$/)
+        .locator('tbody tr')
+        .first(),
+    ).toBeVisible();
 
     await page.getByRole('radio', { name: /Full instructions/ }).check();
     await expect(page.locator('.step-diagram')).not.toHaveCount(0);

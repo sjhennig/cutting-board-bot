@@ -490,9 +490,11 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
                 ? `The thickness of your boards. Tiles are square and this wide${design ? `: ${design.columns} by ${design.rows} tiles.` : '.'}`
                 : state.pattern === 'illusion3d'
                   ? 'The thickness of your boards. It must be at least as much as the widest piece of the pattern.'
-                  : design
-                    ? `The thickness of your boards. Each row is this deep: ${design.rows} rows.`
-                    : 'The thickness of your boards.'
+                  : state.pattern === 'tumbling'
+                    ? `The thickness of your boards. Each cube is twice this wide${design ? `: ${design.columns} across and ${design.rows} rows.` : '.'}`
+                    : design
+                      ? `The thickness of your boards. Each row is this deep: ${design.rows} rows.`
+                      : 'The thickness of your boards.'
             }
           />
         </div>
@@ -511,6 +513,12 @@ export function TuneStep({ state, update, design }: StepProps & { design: Design
               : '.'}{' '}
             At {show(ILLUSION_SIDE)} square they are the plan's own
             {state.unit === 'in' ? ', rounded to the nearest 1/32 in.' : ', to the millimetre.'}
+          </p>
+        )}
+        {state.pattern === 'tumbling' && (
+          <p className="help">
+            The sticks are ripped with the blade tilted, so they must come from boards wider than the stick. All three
+            woods must be the same thickness. Thicker boards make bigger cubes and far fewer pieces to fit together.
           </p>
         )}
         {state.pattern === 'chevron' && (

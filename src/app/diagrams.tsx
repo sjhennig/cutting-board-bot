@@ -1,4 +1,4 @@
-import { layoutPieces, type PlannedBoard, type Recipe } from '../engine';
+import { layoutPieces, type Cell, type PlannedBoard, type Recipe, type TumblingResult } from '../engine';
 import { speciesColor } from './parts';
 
 const OUTLINE = { stroke: 'rgba(0,0,0,0.25)', strokeWidth: 0.5 };
@@ -165,6 +165,62 @@ export function FlattenDiagram(props: { length: number; sliceThickness: number; 
       <rect x={0} y={0} width={length} height={height} fill="#d9c7a6" {...OUTLINE} />
       <rect x={0} y={0} width={length} height={layer} fill="url(#hatch-flatten)" {...OUTLINE} />
       <rect x={0} y={height - layer} width={length} height={layer} fill="url(#hatch-flatten)" {...OUTLINE} />
+    </svg>
+  );
+}
+
+const polygon = (cell: Cell, key: number) => (
+  <polygon
+    key={key}
+    points={(cell.points ?? []).map(([x, y]) => `${x},${y}`).join(' ')}
+    fill={speciesColor(cell.species)}
+    {...OUTLINE}
+  />
+);
+
+/** The end of a six-sided log: three diamond sticks, one of each wood. */
+export function LogDiagram({ tumbling, label }: { tumbling: TumblingResult; label: string }) {
+  const whole = tumbling.layout.find((puck) => !puck.half);
+  if (!whole) return null;
+  const { side, acrossFlats } = tumbling;
+  const left = Math.min(...whole.cells.map((cell) => cell.x));
+  const top = Math.min(...whole.cells.map((cell) => cell.y));
+  const pad = side * 0.15;
+  return (
+    <svg
+      className="diagram log"
+      viewBox={`${left - pad} ${top - pad} ${acrossFlats + pad * 2} ${side * 2 + pad * 2}`}
+      role="img"
+      aria-label={label}
+    >
+      {whole.cells.map(polygon)}
+    </svg>
+  );
+}
+
+/** The pucks laid out like a honeycomb, with the lines the glued board is trimmed to. */
+export function HoneycombDiagram({ tumbling, label }: { tumbling: TumblingResult; label: string }) {
+  const { layout, trim, side } = tumbling;
+  const cells = layout.flatMap((puck) => puck.cells);
+  const right = Math.max(...cells.map((cell) => cell.x + cell.width));
+  const bottom = Math.max(...cells.map((cell) => cell.y + cell.height));
+  const pad = side * 0.3;
+  return (
+    <svg
+      className="diagram honeycomb"
+      viewBox={`${-pad} ${-pad} ${right + pad * 2} ${bottom + pad * 2}`}
+      role="img"
+      aria-label={label}
+    >
+      {cells.map(polygon)}
+      <rect
+        className="cut-line"
+        fill="none"
+        x={trim.left}
+        y={trim.top}
+        width={trim.right - trim.left}
+        height={trim.bottom - trim.top}
+      />
     </svg>
   );
 }

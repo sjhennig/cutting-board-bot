@@ -5,7 +5,7 @@ import type { CatalogBoard } from '../data/woodVault';
 import { formatLength, type PlannedBoard } from '../engine';
 import type { Update } from './App';
 import { designSpecies, patternInfo, type Design, type DesignState } from './design';
-import { ArrangeDiagram, FlattenDiagram, StockCutDiagram } from './diagrams';
+import { ArrangeDiagram, FlattenDiagram, HoneycombDiagram, LogDiagram, StockCutDiagram } from './diagrams';
 import { buildGuide } from './guide';
 import { groupName, panelGroups, reRipRows } from './panels';
 import { BoardPreview, Notices, PanelPreview, Swatch, speciesName } from './parts';
@@ -66,7 +66,7 @@ export function PlanStep({
   }
 
   const show = (mm: number): string => formatLength(mm, state.unit);
-  const { recipe, board, plan, rips, purchase } = design;
+  const { recipe, board, plan, rips, purchase, tumbling } = design;
   // Most designs have one kind of panel. Some have several, each with its own strips and length.
   const groups = panelGroups(recipe);
   const several = groups.length > 1;
@@ -232,9 +232,9 @@ export function PlanStep({
       <>
         {stripLengths.length === 1 ? (
           <p>
-            Every strip is <strong>{stripLengths[0]}</strong> long.{' '}
+            Every {tumbling ? 'stick' : 'strip'} is <strong>{stripLengths[0]}</strong> long.{' '}
             {anyRipping
-              ? 'Cut each board to that length first, then rip it into strips.'
+              ? `Cut each board to that length first, then rip it into ${tumbling ? 'sticks' : 'strips'}.`
               : 'Cut each board to that length.'}
           </p>
         ) : (
@@ -247,7 +247,15 @@ export function PlanStep({
             Keep the strips for each panel in their own stack.
           </p>
         )}
-        {tilt !== undefined && (
+        {tumbling && (
+          <p>
+            Rip with the blade tilted <strong>{tilt} degrees from upright</strong> ({90 - (tilt ?? 0)} degrees from the
+            table), so every stick is a diamond with four equal sides of <strong>{show(tumbling.side)}</strong>. The
+            widths below are measured along the face of the board. The first cut on each board only makes the slanted
+            edge: that offcut is waste.
+          </p>
+        )}
+        {tilt !== undefined && !tumbling && (
           <p>
             Rip with the blade tilted <strong>{tilt} degrees</strong>, so every strip has slanted sides. The widths
             below are measured along the face of the board. The first strip off each board keeps one square edge: set
@@ -255,7 +263,7 @@ export function PlanStep({
             cut.
           </p>
         )}
-        {oneLengthEach && (
+        {oneLengthEach && !tumbling && (
           <p className="help">
             That length gives exactly the slices you need. If you would like a spare slice or two, leave the boards
             longer: the extra just becomes more slices.
@@ -312,10 +320,10 @@ export function PlanStep({
             </caption>
             <thead>
               <tr>
-                <th scope="col">{tilt !== undefined ? 'Strip width' : 'Set fence to'}</th>
+                <th scope="col">{tumbling ? 'Stick width' : tilt !== undefined ? 'Strip width' : 'Set fence to'}</th>
                 <th scope="col">Wood</th>
                 {stripLengths.length > 1 && <th scope="col">Strip length</th>}
-                <th scope="col">Strips</th>
+                <th scope="col">{tumbling ? 'Sticks' : 'Strips'}</th>
               </tr>
             </thead>
             <tbody>
@@ -508,7 +516,7 @@ export function PlanStep({
       <PanelPreview recipe={recipe} cuts={cuts} />
     );
 
-  const diagrams: Partial<Record<StageId, { picture: ReactNode; caption: string }>> = {
+  let diagrams: Partial<Record<StageId, { picture: ReactNode; caption: string }>> = {
     strips: {
       picture: (
         <div className="stock-cuts">
@@ -571,6 +579,90 @@ export function PlanStep({
     },
   };
 
+  if (tumbling) {
+    // Sticks, logs and pucks in place of strips, panels and slices.
+    const woods = tumbling.recipe.panels[0]!.strips.map((strip) => strip.species);
+    const spare = tumbling.logs * tumbling.pucksPerLog - tumbling.pucks;
+    content.panel = (
+      <>
+        <p>
+          Glue one stick of each wood into a six-sided log, with the woods in the same order round every log. Make{' '}
+          <strong>{plural(tumbling.logs, 'log')}</strong>, each {show(tumbling.acrossFlats)} across its flat sides and{' '}
+          {show(tumbling.logLength)} long. Wrap each log tightly with painter's tape or strong rubber bands while the
+          glue sets.
+        </p>
+        <ol className="strip-order">
+          {woods.map((species, index) => (
+            <li key={species}>
+              <Swatch species={species} /> {speciesName(species)}:{' '}
+              {['the top', 'the left face', 'the right face'][index]} of each cube
+            </li>
+          ))}
+        </ol>
+      </>
+    );
+    content.slice = (
+      <>
+        <p>
+          Square one end of each log, then crosscut {tumbling.logs > 1 ? 'each' : 'it'} into{' '}
+          <strong>{plural(tumbling.pucksPerLog, 'puck')}</strong>, each{' '}
+          <strong>{show(recipe.cut.sliceThickness)}</strong> thick. You need {tumbling.pucks} pucks
+          {spare > 0 ? `, so ${spare === 1 ? 'one is' : `${spare} are`} spare` : ''}. Use a stop block so every puck is
+          identical.
+        </p>
+        <p className="help">
+          The pucks are cut {show(recipe.flattenPerFace * 2)} thicker than the finished board to leave room for
+          flattening.
+        </p>
+      </>
+    );
+    content.arrange = (
+      <>
+        <p>
+          Saw <strong>{plural(tumbling.pucksToHalve, 'puck')}</strong> in half from point to point, through the middle
+          of the {speciesName(woods[0]!)} diamond. Stand every puck end grain up with the {speciesName(woods[0]!)}{' '}
+          diamond at the top.
+        </p>
+        <p>
+          Lay out <strong>{plural(tumbling.rows, 'row')}</strong> of {plural(tumbling.columns, 'whole puck')} and one
+          half puck. The half goes at the right-hand end of the first row, the left-hand end of the second, and so on.
+          Check the pattern against the picture, then glue one row at a time.
+        </p>
+      </>
+    );
+    content.flatten = (
+      <>
+        <p>
+          Trim all four edges square, taking the board to {show(board.length)} by {show(board.width)}. Flatten both
+          faces down to <strong>{show(board.thickness)}</strong> thick.
+        </p>
+        {!guide && (
+          <p className="help">
+            Flatten with a router sled or a drum sander. Do not run an end grain board through a thickness planer: the
+            knives can catch the fibres and throw or shatter the board.
+          </p>
+        )}
+      </>
+    );
+    diagrams = {
+      strips: diagrams.strips!,
+      panel: {
+        picture: <LogDiagram tumbling={tumbling} label="The end of a log: three diamond sticks, one of each wood" />,
+        caption: 'The end of a log. Three diamond sticks make one cube.',
+      },
+      arrange: {
+        picture: (
+          <HoneycombDiagram
+            tumbling={tumbling}
+            label={`${tumbling.rows} rows of ${tumbling.columns} pucks and a half puck, laid out like a honeycomb`}
+          />
+        ),
+        caption: 'The pucks in position, end grain up. The dashed line shows where the glued board is trimmed.',
+      },
+      flatten: diagrams.flatten!,
+    };
+  }
+
   return (
     <div className="plan">
       <h2>{guide ? 'Your build instructions' : 'Your cut list'}</h2>
@@ -605,6 +697,7 @@ export function PlanStep({
 
       <div className="plan-previews">
         {!guide &&
+          !tumbling &&
           groups.map((group) => (
             <figure key={group.ids[0]}>
               <PanelPreview recipe={recipe} panelIndex={group.index} />
@@ -663,11 +756,11 @@ export function PlanStep({
       <section>
         <h3>Where the wood goes</h3>
         <p>
-          {percent(board.waste.board)} of the panel ends up in the board. {percent(lost)} is lost to saw cuts, squaring
-          and flattening
+          {percent(board.waste.board)} of the wood in the {tumbling ? 'logs' : panelCount > 1 ? 'panels' : 'panel'} ends
+          up in the board. {percent(lost)} is lost to saw cuts, squaring and flattening
           {board.waste.panelLeftover > 1 ? `, and ${percent(board.waste.panelLeftover)} is spare panel.` : '.'}
         </p>
-        {guide && <p className="help">Tip sources were last read on {SOURCES_CHECKED}.</p>}
+        {guide && <p className="help">Tip sources were read on or after {SOURCES_CHECKED}.</p>}
       </section>
     </div>
   );

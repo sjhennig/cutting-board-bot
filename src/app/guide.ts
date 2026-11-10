@@ -1,8 +1,12 @@
+import { speciesById } from '../data/species';
 import { TIPS, type StageId, type Tip } from '../data/tips';
-import { formatLength, panelWidth } from '../engine';
+import { formatLength, panelWidth, TUMBLING_TILT } from '../engine';
 import { NARROW } from '../engine/checks';
 import { patternInfo, type Design, type DesignState } from './design';
 import { groupName, panelGroups } from './panels';
+
+/** Tips about gluing and flattening a flat panel, which a six-sided log is not. */
+const PANEL_ONLY_TIPS = ['alternate-grain', 'clamp-evenly', 'plane-panel'];
 
 export interface GuideStage {
   id: StageId;
@@ -44,9 +48,15 @@ export function buildGuide(state: DesignState, design: Design): GuideStage[] {
   const grid = (recipe.columns ?? 1) > 1;
   const trimmed = Math.max(...recipe.panels.map(panelWidth)) - board.length > 0.01;
   const planing = design.rips.some((line) => line.planeTo !== undefined);
+  const { tumbling } = design;
 
   const applies = (tip: Tip): boolean =>
-    tip.when === undefined || (tip.when === 'needs-ripping' && ripping) || (tip.when === 'narrow-pieces' && narrow);
+    // Advice about flat panels and their clamps does not fit six-sided logs.
+    !(tumbling && PANEL_ONLY_TIPS.includes(tip.id)) &&
+    (tip.when === undefined ||
+      (tip.when === 'needs-ripping' && ripping) ||
+      (tip.when === 'narrow-pieces' && narrow) ||
+      (tip.when === 'tumbling' && tumbling !== undefined));
   // Ripping slices into pieces is ripping again, so the same advice applies.
   const tipsFor = (id: StageId): Tip[] =>
     TIPS.filter((tip) =>
@@ -206,6 +216,51 @@ export function buildGuide(state: DesignState, design: Design): GuideStage[] {
       steps: ['If the board is a gift, pass these on with it.'],
     },
   ];
+
+  if (tumbling) {
+    // Tumbling blocks are sticks, logs and pucks, not strips, panels and slices.
+    const [top] = tumbling.recipe.panels[0]!.strips;
+    const topName = speciesById(top!.species)?.name ?? top!.species;
+    const replace = (id: StageId, title: string, steps: string[]): void => {
+      const stage = stages.find((entry) => entry.id === id)!;
+      stage.title = title;
+      stage.steps = steps;
+    };
+    replace('strips', 'Cut the diamond sticks', [
+      ...(planing ? ['Plane the thicker boards down first, so that all your boards are the same thickness.'] : []),
+      `Crosscut each board to ${show(tumbling.logLength)}, as shown in the table.`,
+      `Tilt the blade ${TUMBLING_TILT} degrees from upright, which is ${90 - TUMBLING_TILT} degrees from the table.`,
+      'Rip a slanted edge along each board first. That narrow offcut is waste.',
+      `Rip the sticks, ${show(tumbling.side)} wide on the face, with the slanted edge against the fence and the same face up for every cut.`,
+      'Measure all four sides of the first stick. They must be equal: move the fence until they are, then rip the rest.',
+      'Tape one stick of each wood together dry. They should close into a six-sided log with no gaps.',
+    ]);
+    replace('panel', 'Glue the sticks into logs', [
+      `You are making ${tumbling.logs === 1 ? 'one log' : `${tumbling.logs} identical logs`}, each from one stick of each wood.`,
+      'Lay the three sticks side by side, sharp edges together, and spread glue thinly on the faces that will meet.',
+      'Close them into a six-sided log, with the woods in the same order round every log.',
+      'Wrap the log tightly along its whole length with painter’s tape or strong rubber bands.',
+      'Leave the logs wrapped until the glue has set, then unwrap them and scrape off any glue. Wait 24 hours before sawing.',
+    ]);
+    replace('slice', 'Slice the logs into pucks', [
+      'Trim one end of each log square.',
+      `Clamp a stop block ${show(recipe.cut.sliceThickness)} from the blade.`,
+      `Cut ${tumbling.pucksPerLog} pucks from each log: you need ${tumbling.pucks} in all.`,
+      'Rub the fuzz off the edges of each puck with fine sandpaper. Do not sand the six sides, or the angles will change.',
+    ]);
+    replace('arrange', 'Arrange and glue the pucks', [
+      `Saw ${tumbling.pucksToHalve} of the pucks in half from point to point, through the middle of the ${topName} diamond.`,
+      'Fix two straight boards to the bench at a right angle, over wax paper, to build against.',
+      `Lay everything out dry, end grain up, with the ${topName} diamond at the top of every puck. Each row is ${tumbling.columns} whole pucks and one half; the half goes at the right of the first row, the left of the second, and so on.`,
+      'Glue one whole row at a time against the straight boards, and scrape the squeezed-out glue from the open joints before adding the next row.',
+      'Clamp gently from the sides, watching that the rows do not lift. Leave the board clamped for 24 hours.',
+    ]);
+    replace('flatten', 'Trim and flatten', [
+      `Trim all four edges square, along the dashed lines in the picture, to ${show(board.length)} by ${show(board.width)}.`,
+      `Flatten one face, turn the board over and flatten the other, working down to ${show(board.thickness)} thick.`,
+      'Check with a straightedge that the board does not rock on a flat surface.',
+    ]);
+  }
 
   return stages.map((stage) => ({ ...stage, tips: tipsFor(stage.id) }));
 }

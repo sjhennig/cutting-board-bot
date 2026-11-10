@@ -6,3 +6,4 @@ export * from './cutplan';
 export * from './checks';
 export * from './purchase';
 export * from './geometry';
+export * from './tumbling';

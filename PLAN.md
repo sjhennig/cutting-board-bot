@@ -77,7 +77,9 @@ This family does not fit the slice model, so it gets its own small engine.
 - Rhombus side `s = T / sin 60 = 1.155 T`, where `T` is the stock thickness.
 - Each rip loses `k / cos 30 = 1.155 k` of width.
 - One stick of each of three tones glues into a hexagonal log, `2T` across the flats.
-- Logs tile as a honeycomb, then the whole block is crosscut into boards.
+- Each log is crosscut into hexagonal pucks, and the pucks are laid end grain up as a honeycomb, with pucks sawn in half filling the ends of the rows. The glued board is then trimmed square.
+
+An earlier version of this plan had the logs glued into one block and the block crosscut into boards. Neither of the two published builds that were read does that (This Old House and a LumberJocks build log; links in `src/engine/tumbling.ts`), so the app follows them. Neither gives the size of the rhombus; the `1.155 T` above is geometry, not a published figure.
 
 ## 4. Pattern library
 
@@ -92,7 +94,7 @@ This family does not fit the slice model, so it gets its own small engine.
 | Basket weave                   | Intermediate | Slice             | Square tiles of three strips laid in a grid, alternate tiles turned a quarter turn  |
 | Chevron / zigzag               | Intermediate | Slice             | Strips ripped with the blade tilted 30 degrees; alternate slices turned upside down |
 | Pixel art                      | Intermediate | Slice             | One panel recipe per distinct row                                                   |
-| Tumbling blocks                | Advanced     | Rhombus           | Three tones, hexagonal logs                                                         |
+| Tumbling blocks                | Advanced     | Rhombus           | Three tones, hexagonal logs sliced into pucks, pucks tiled as a honeycomb           |
 | 3D illusion (MTM style)        | Advanced     | Slice, two panels | Shrinking strip widths, slices re-ripped to shrinking widths                        |
 
 ### What Phase 4 changed
@@ -202,7 +204,7 @@ Where sources disagree, the app says so instead of picking a side silently. Plan
 | 2. First usable version (done)  | Guided flow, four beginner patterns, kit catalog, cut list | A new user gets from a kit to a printed cut list unaided                                           |
 | 3. Instructions (done)          | Step-by-step guide, sourced tips, print layout             | Every step has a diagram; every tip has a checked link                                             |
 | 4. Intermediate patterns (done) | Basket weave and chevron                                   | Chevron and basket weave render and produce correct cut lists                                      |
-| 5. Advanced patterns (started)  | Rhombus engine, tumbling blocks, 3D illusion board (done)  | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
+| 5. Advanced patterns (done)     | Rhombus engine, tumbling blocks, 3D illusion board         | 3D board reproduces MTM's published dimensions; tumbling blocks verified against a published build |
 | 6. Polish                       | Grain textures, share links, cost estimate, shopping list  | -                                                                                                  |
 
 Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
@@ -213,7 +215,7 @@ Phases 1 to 3 are the product. Phases 4 to 6 add range and can be reordered.
 2. **Cutting board packs.** Confirm how many strips of what width each pack contains.
 3. **Competitor to try by hand.** Cutting Board Studio.
 4. **USDA sanitising advice.** The USDA cutting board page refuses automated visits, so its bleach-sanitising advice is not in the app. Read it by hand before adding.
-5. **Tumbling blocks.** Confirm the build sequence against a published guide.
+5. **Tumbling blocks.** Done for the build sequence, against two guides. Still wanted: a guide that states the rhombus size and finished board size. Woodcraft's "Quilt-Pattern Cutting Board" and a Fine Woodworking reader project looked likely but could not be reached from the build environment.
 
 ## 11. Status and where to pick up
 
@@ -224,12 +226,12 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 | Area                | What exists                                                                                                                                                                              |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Geometry engine     | Recipe model, finished size, surface layout, slice counts, which pieces to rip from each slice, full waste breakdown, cut planner, purchase planner, design checks (`src/engine`)        |
-| Patterns in the app | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron, plaid, framed (intermediate); MTM Wood's 3D illusion board (advanced)                                           |
+| Patterns in the app | Checkerboard, brick, stripes, chaotic (beginner); basket weave, chevron, plaid, framed (intermediate); tumbling blocks and MTM Wood's 3D illusion board (advanced)                       |
 | Designer            | Five steps: shop, wood, pattern, size, cut list. Buy from the Wood Vault catalog or enter your own boards. Design remembered in the browser, and shareable as a link                     |
 | Outputs             | Cut list in build order; optional full instructions with diagrams, numbered steps, sanding, oiling and care; print layout for both. Both handle designs with more than one kind of panel |
-| Tips                | Twenty, each citing a source read in full on 9 November 2026; disagreements between sources are shown                                                                                    |
+| Tips                | Twenty-four, each citing a source read in full on 9 or 10 November 2026; disagreements between sources are shown                                                                         |
 | Data                | Species list with food-suitability ratings; hand-entered Wood Vault catalog (surfaced boards and cutting board blanks)                                                                   |
-| Project hygiene     | 161 unit tests and 17 end-to-end browser tests; formatting, type, unit and browser checks on every push; automatic publishing of `main` to GitHub Pages once switched on                 |
+| Project hygiene     | 175 unit tests and 18 end-to-end browser tests; formatting, type, unit and browser checks on every push; automatic publishing of `main` to GitHub Pages once switched on                 |
 
 ### What the second session changed
 
@@ -242,6 +244,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 - **Share links.** "Copy a link to this design" on the last step. The design travels in the link, so there is still no server. Saved and shared designs are now checked field by field, so a damaged link or an old saved design cannot break the page.
 - **"Make the biggest board my wood allows"** on the size step, for people working from boards they already have.
 - **A tighter print layout:** smaller type, pictures and margins on paper only.
+- **Tumbling blocks.** A small engine of its own (`src/engine/tumbling.ts`) lays out the honeycomb and reports the logs as a recipe, so the cut planner, shopping list and cut list screen are reused. The method was checked against two published builds, which changed the plan (section 3). Four tips from those builds were added; they were read on 10 November 2026.
 - **A purchase planner bug was fixed.** When one board size was the best choice for several strip widths, the cut plan listed those boards several times over and bought one board per width. The first end-to-end test of the 3D board exposed it. No earlier pattern triggered it, because each needed one strip width per wood.
 
 ### Outstanding
@@ -257,7 +260,7 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 **Patterns**
 
 - Plaid line width is fixed at 1/4 in., and a framed border is as wide as one block. Both could be settings. Their build steps are worked out from geometry, not a published guide, and the app says so.
-- Tumbling blocks. Needs its own geometry (60 degree rhombus sticks in hexagonal logs, section 3) and a published build guide to check against. Not started.
+- Tumbling blocks: the method is from two published builds, but neither states the size of the diamond sticks, so that comes from geometry alone. The default 3/4 in. boards make 1-1/2 in. cubes and about a hundred pucks for a 15 in. board; thicker boards make far fewer, but in the catalog's woods need a planer. The app does not yet say this as a suggestion.
 - Pixel art. Not started.
 - Chevron tilt is fixed at 30 degrees. Its build steps are worked out from geometry and have not been checked against a published guide.
 
@@ -280,7 +283,6 @@ Updated 10 November 2026, at the end of the second working session. Read this se
 
 ### Recommended next session
 
-1. **Tumbling blocks**, the largest remaining piece of new geometry. Read a published build guide first (section 10, item 5).
-2. Pixel art.
-
-If real-user feedback arrives first, let it reorder this list.
+1. **Get real-user feedback.** Ten patterns now work end to end and nobody but the author has used them. Switch on GitHub Pages and try it.
+2. Pixel art, the last pattern in section 4 not yet built.
+3. Find a tumbling blocks guide that publishes its dimensions (section 10, item 5).

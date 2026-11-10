@@ -10,6 +10,9 @@ const tipIds = (state: DesignState, stage: StageId): string[] =>
     .find((entry) => entry.id === stage)!
     .tips.map((tip) => tip.id);
 
+const woods = (pattern: { minSpecies: number }): string[] =>
+  pattern.minSpecies > 2 ? ['hard-maple', 'cherry', 'black-walnut'] : defaultState.buySpecies;
+
 describe('tips', () => {
   it('gives every tip a source with a secure link', () => {
     expect(SOURCES_CHECKED).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -33,6 +36,13 @@ describe('tips', () => {
     expect(planer.otherView?.sources.length).toBeGreaterThan(0);
   });
 });
+
+const tumblingState: DesignState = {
+  ...defaultState,
+  pattern: 'tumbling',
+  stripThickness: inch(0.75),
+  buySpecies: ['hard-maple', 'cherry', 'black-walnut'],
+};
 
 describe('buildGuide', () => {
   it('covers the build from buying wood to looking after the board', () => {
@@ -64,7 +74,8 @@ describe('buildGuide', () => {
     const ripped = new Set(
       guideFor({ ...defaultState, cellWidth: inch(1.5) }).flatMap((stage) => stage.tips.map((tip) => tip.id)),
     );
-    for (const tip of TIPS) expect(shown.has(tip.id) || ripped.has(tip.id), tip.id).toBe(true);
+    const cubes = new Set(guideFor(tumblingState).flatMap((stage) => stage.tips.map((tip) => tip.id)));
+    for (const tip of TIPS) expect(shown.has(tip.id) || ripped.has(tip.id) || cubes.has(tip.id), tip.id).toBe(true);
   });
 
   it('leaves out ripping advice when the blanks need no ripping', () => {
@@ -138,7 +149,7 @@ describe('buildGuide', () => {
 
   it('has a re-ripping stage only for boards with slices cut narrower', () => {
     for (const pattern of PATTERNS) {
-      const state = { ...defaultState, ...pattern.defaults, pattern: pattern.id };
+      const state = { ...defaultState, ...pattern.defaults, pattern: pattern.id, buySpecies: woods(pattern) };
       const narrower = makeDesign(state).recipe.slices.some((slice) => slice.ripTo !== undefined);
       expect(
         guideFor(state).some((stage) => stage.id === 'rerip'),
@@ -146,6 +157,29 @@ describe('buildGuide', () => {
       ).toBe(narrower);
     }
     expect(guideFor(defaultState).some((stage) => stage.id === 'rerip')).toBe(false);
+  });
+
+  it('describes sticks, logs and pucks for tumbling blocks', () => {
+    const guide = guideFor(tumblingState);
+    expect(guide.map((stage) => stage.title).slice(1, 6)).toEqual([
+      'Cut the diamond sticks',
+      'Glue the sticks into logs',
+      'Slice the logs into pucks',
+      'Arrange and glue the pucks',
+      'Trim and flatten',
+    ]);
+    const steps = (id: StageId): string => guide.find((stage) => stage.id === id)!.steps.join(' ');
+    expect(steps('strips')).toContain('30 degrees from upright, which is 60 degrees from the table');
+    expect(steps('strips')).toContain('7/8" wide on the face');
+    expect(steps('arrange')).toMatch(/Saw \d+ of the pucks in half from point to point/);
+    expect(steps('arrange')).toContain('Hard maple diamond at the top');
+    // Advice written for flat panels is left out; the advice from the two cube builds is added.
+    const tips = (id: StageId): string[] => guide.find((stage) => stage.id === id)!.tips.map((tip) => tip.id);
+    expect(tips('panel')).toEqual(['wrap-logs', 'glue-choice']);
+    expect(tips('strips')).toEqual(expect.arrayContaining(['angle-gauge', 'test-three-woods', 'rip-safely']));
+    expect(tips('arrange')).toContain('row-at-a-time');
+    // Those tips appear for no other pattern.
+    expect(guideFor(defaultState).flatMap((stage) => stage.tips.map((tip) => tip.id))).not.toContain('wrap-logs');
   });
 
   it('describes the trim for a brick board', () => {

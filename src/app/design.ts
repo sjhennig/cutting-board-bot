@@ -17,6 +17,8 @@ import {
   ripList,
   stripes,
   suggestPurchase,
+  tumblingBlocks,
+  TUMBLING_TILT,
   formatLength,
   type BoardResult,
   type CutPlan,
@@ -25,11 +27,21 @@ import {
   type RipLine,
   type Shop,
   type StockBoard,
+  type TumblingResult,
   type Unit,
 } from '../engine';
 
 export type PatternId =
-  'checkerboard' | 'brick' | 'stripes' | 'chaotic' | 'basketweave' | 'chevron' | 'plaid' | 'framed' | 'illusion3d';
+  | 'checkerboard'
+  | 'brick'
+  | 'stripes'
+  | 'chaotic'
+  | 'basketweave'
+  | 'chevron'
+  | 'plaid'
+  | 'framed'
+  | 'tumbling'
+  | 'illusion3d';
 
 export interface PatternInfo {
   id: PatternId;
@@ -133,6 +145,18 @@ export const PATTERNS: PatternInfo[] = [
       'Put one border piece from panel B first and one last, with the slices from panel A between them. If the centre is a checkerboard, turn every second slice from panel A end for end.',
   },
   {
+    id: 'tumbling',
+    name: 'Tumbling blocks',
+    blurb: 'Three woods that read as a stack of cubes. Diamond sticks, six-sided logs, and very exact sawing.',
+    level: 'Advanced',
+    minSpecies: 3,
+    cellLabel: null,
+    // 3/4 in. boards come in most woods at the same thickness, so nothing needs planing.
+    defaults: { stripThickness: inch(0.75) },
+    arrange:
+      'Lay the pucks out like a honeycomb, every one turned the same way, so each wood only ever touches itself at a corner. Every second row starts with a half puck.',
+  },
+  {
     id: 'illusion3d',
     name: '3D illusion',
     blurb: 'Rectangles that shrink towards the centre, so the flat board seems to bulge. Many thin, precise pieces.',
@@ -227,12 +251,19 @@ export interface Design {
   notices: Notice[];
   columns: number;
   rows: number;
+  /** Set for tumbling blocks, which are laid out as a honeycomb and not in slices. */
+  tumbling?: TumblingResult;
 }
 
 const count = (target: number, size: number): number => Math.max(1, Math.round(target / size));
 
 /** Turn the user's choices into a recipe. Throws with a readable message if they do not make a board. */
-export function makeRecipe(state: DesignState): { recipe: Recipe; columns: number; rows: number } {
+export function makeRecipe(state: DesignState): {
+  recipe: Recipe;
+  columns: number;
+  rows: number;
+  tumbling?: TumblingResult;
+} {
   const species = designSpecies(state);
   const info = patternInfo(state.pattern);
   if (species.length < info.minSpecies) {
@@ -324,6 +355,34 @@ export function makeRecipe(state: DesignState): { recipe: Recipe; columns: numbe
       const recipe = framed({ species, columns, rows: deep, cellWidth: cell, borderWidth, shop });
       return { recipe, columns: (recipe.panels[0]?.strips.length ?? 2) - 2, rows: deep };
     }
+    case 'tumbling': {
+      const thickness = state.stripThickness;
+      const side = thickness / Math.sin(Math.PI / 3);
+      // A row is a whole number of pucks plus a half; rows sit 1.5 sides apart.
+      const columns = count(state.boardLength + state.kerf - thickness, 2 * thickness);
+      const deep = count(state.boardWidth / side + 0.5, 1.5);
+      const woods = species.slice(0, 3);
+      const longest =
+        state.woodMode === 'buy'
+          ? Math.max(...woodVaultBoards().map((board) => board.length))
+          : Math.min(
+              ...woods.map((id) =>
+                Math.max(0, ...state.stock.filter((board) => board.species === id).map((board) => board.length)),
+              ),
+            );
+      const tumbling = tumblingBlocks({
+        species: woods as [string, string, string],
+        stockThickness: thickness,
+        columns,
+        rows: deep,
+        puckThickness: shop.sliceThickness,
+        kerf: shop.kerf,
+        endTrim: shop.endTrim,
+        flattenPerFace: shop.flattenPerFace,
+        maxLogLength: longest,
+      });
+      return { recipe: tumbling.recipe, columns, rows: deep, tumbling };
+    }
     case 'illusion3d': {
       // MTM Wood's widths, scaled to the size asked for and rounded to marks on a ruler.
       const grid = state.unit === 'in' ? inch(1 / 32) : 0.5;
@@ -365,8 +424,8 @@ export function makeRecipe(state: DesignState): { recipe: Recipe; columns: numbe
 
 /** Everything the interface shows for the current choices. */
 export function makeDesign(state: DesignState): Design {
-  const { recipe, columns, rows } = makeRecipe(state);
-  const board = buildBoard(recipe);
+  const { recipe, columns, rows, tumbling } = makeRecipe(state);
+  const board = tumbling?.board ?? buildBoard(recipe);
   const notices: Notice[] = [];
   const show = (mm: number): string => formatLength(mm, state.unit);
 
@@ -390,8 +449,9 @@ export function makeDesign(state: DesignState): Design {
       let best: { lines: PurchaseLine[]; thickness: number } | null = null;
       for (const thickness of [...thicknesses].sort((a, b) => b - a)) {
         try {
-          const other = makeRecipe({ ...state, stripThickness: thickness }).recipe;
-          const result = buildBoard(other);
+          const made = makeRecipe({ ...state, stripThickness: thickness });
+          const other = made.recipe;
+          const result = made.tumbling?.board ?? buildBoard(other);
           const sameBoard = Math.abs(result.length - board.length) < 1 && Math.abs(result.width - board.width) < 1;
           if (!sameBoard) continue;
           const planed = suggestPurchase(other, woodVaultBoards(), { kerf: state.kerf, canPlane: true });
@@ -459,6 +519,18 @@ export function makeDesign(state: DesignState): Design {
           : 'Make a test cut on an offcut before each new fence setting.'),
     });
   }
+  if (tumbling) {
+    notices.push({
+      level: 'caution',
+      message:
+        'This follows two published builds, from This Old House and LumberJocks. Neither gives the size of the diamond sticks, ' +
+        'so that is worked out from the geometry: all four sides equal. The pattern only closes up if the ' +
+        `${TUMBLING_TILT} degree cuts are exact, so make test cuts in all three woods first.`,
+    });
+    if (designSpecies(state).length > 3) {
+      notices.push({ level: 'caution', message: 'This pattern uses only the first three woods in your list.' });
+    }
+  }
   if (state.pattern === 'basketweave') {
     notices.push({
       level: 'caution',
@@ -499,7 +571,17 @@ export function makeDesign(state: DesignState): Design {
     notices.push({ level: 'caution', message: warning.message });
   }
 
-  return { recipe, board, plan, rips: ripList(plan), purchase, notices, columns, rows };
+  return {
+    recipe,
+    board,
+    plan,
+    rips: ripList(plan),
+    purchase,
+    notices,
+    columns,
+    rows,
+    ...(tumbling ? { tumbling } : {}),
+  };
 }
 
 /** A sensible strip thickness for the user's own boards: one every chosen wood can supply. */
